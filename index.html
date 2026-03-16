@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Python Static Code Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>Python Static Code Analyzer</h1>
+      <p>Upload a <code>.py</code> file to see dead code and complexity analysis.</p>
+    </header>
+
+    <main class="main">
+      <section class="upload-card">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-zone-inner">
+            <span class="drop-icon">⬇️</span>
+            <h2>Drag &amp; Drop your Python file here</h2>
+            <p>or click to browse</p>
+            <p class="hint">Only <code>.py</code> files are accepted.</p>
+          </div>
+          <!-- Hidden file input used for click-to-upload -->
+          <input
+            id="file-input"
+            type="file"
+            accept=".py"
+            class="file-input"
+          />
+        </div>
+
+        <div id="status" class="status"></div>
+        <button id="analyze-btn" class="analyze-btn" disabled>
+          Analyze File
+        </button>
+      </section>
+
+      <section class="result-card">
+        <h2>Analysis Report</h2>
+        <div id="loading" class="loading hidden">Analyzing… Please wait.</div>
+        <pre id="report" class="report">
+No report yet. Upload a Python file and click "Analyze File".
+        </pre>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Student project · Static analysis only · No code execution</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
