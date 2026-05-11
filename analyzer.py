@@ -1,65 +1,147 @@
 import ast
 import sys
 
+COMMON_DUNDER_METHODS = {
+    "__init__", "__str__", "__repr__", "__eq__", "__ne__", "__lt__", "__le__",
+    "__gt__", "__ge__", "__hash__", "__bool__", "__len__", "__iter__",
+    "__next__", "__enter__", "__exit__", "__call__", "__getitem__",
+    "__setitem__", "__delitem__", "__contains__", "__add__", "__sub__",
+    "__mul__", "__truediv__", "__floordiv__", "__mod__", "__pow__",
+}
+
+
 class DeadCodeAnalyzer(ast.NodeVisitor):
-    """Analyzes dead code: unused functions, variables, and imports."""
+    """Analyzes unused imports, variables, functions, classes, and parameters."""
     def __init__(self):
         self.defined_functions = set()
         self.called_functions = set()
         self.defined_variables = {}  # {name: line_number}
         self.used_variables = set()
-        self.function_parameters = set()  # Track function parameters
-        self.imports = {}  # {name: line_number}
+        self.function_parameters = set()  # Kept for backward compatibility
+        self.imports = {}  # {binding_name: line_number}
         self.import_aliases = {}  # {alias: original_name}
+        self.defined_classes = {}  # {name: line_number}
+        self.used_classes = set()
+        self.method_parameters = {}  # {"Class.method(param)": line_number}
+        self.used_method_parameters = set()
+        self.class_stack = []
+        self.function_depth = 0
+        self.parameter_context_stack = []
+        
+    def visit_ClassDef(self, node):
+        self.defined_classes[node.name] = node.lineno
+        self.class_stack.append(node.name)
+        self.generic_visit(node)
+        self.class_stack.pop()
         
     def visit_FunctionDef(self, node):
-        self.defined_functions.add(node.name)
-        # Track function parameters
-        for arg in node.args.args:
-            self.function_parameters.add(arg.arg)
-        self.generic_visit(node)
+        self._visit_function(node)
     
     def visit_AsyncFunctionDef(self, node):
+        self._visit_function(node)
+    
+    def _visit_function(self, node):
         self.defined_functions.add(node.name)
-        # Track function parameters
-        for arg in node.args.args:
-            self.function_parameters.add(arg.arg)
+        params = self._get_parameter_names(node.args)
+        self.function_parameters.update(params)
+
+        is_method = bool(self.class_stack) and self.function_depth == 0
+        parameter_context = {}
+
+        if is_method and node.name not in COMMON_DUNDER_METHODS:
+            method_name = f"{self.class_stack[-1]}.{node.name}"
+            for param in params:
+                parameter_context[param] = f"{method_name}({param})"
+                if param not in {"self", "cls"}:
+                    self.method_parameters[parameter_context[param]] = node.lineno
+        else:
+            # Non-method parameters still shadow outer method parameters.
+            for param in params:
+                parameter_context[param] = None
+
+        self.parameter_context_stack.append(parameter_context)
+        self.function_depth += 1
         self.generic_visit(node)
+        self.function_depth -= 1
+        self.parameter_context_stack.pop()
+
+    def _get_parameter_names(self, args):
+        """Collect all parameter names from a function or method."""
+        params = []
+        all_args = args.posonlyargs + args.args + args.kwonlyargs
+        params.extend(arg.arg for arg in all_args)
+        if args.vararg:
+            params.append(args.vararg.arg)
+        if args.kwarg:
+            params.append(args.kwarg.arg)
+        return params
     
     def visit_Call(self, node):
-        # Track function calls
+        # Track function calls and simple method calls like object.method().
         if isinstance(node.func, ast.Name):
             self.called_functions.add(node.func.id)
+            self.used_classes.add(node.func.id)
         elif isinstance(node.func, ast.Attribute):
-            # Handle method calls like obj.method()
+            self.called_functions.add(node.func.attr)
             if isinstance(node.func.value, ast.Name):
                 self.used_variables.add(node.func.value.id)
         self.generic_visit(node)
     
     def visit_Assign(self, node):
-        # Track variable assignments
+        # Track variable assignments, including tuple/list unpacking.
         for target in node.targets:
-            if isinstance(target, ast.Name):
-                self.defined_variables[target.id] = node.lineno
+            self._track_assignment_target(target, node.lineno)
         self.generic_visit(node)
+
+    def visit_AnnAssign(self, node):
+        self._track_assignment_target(node.target, node.lineno)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node):
+        self._track_assignment_target(node.target, node.lineno)
+        if isinstance(node.target, ast.Name):
+            self.used_variables.add(node.target.id)
+        self.generic_visit(node)
+
+    def visit_For(self, node):
+        self._track_assignment_target(node.target, node.lineno)
+        self.generic_visit(node)
+
+    def _track_assignment_target(self, target, line_number):
+        """Record assigned variable names without treating attributes as variables."""
+        if isinstance(target, ast.Name):
+            self.defined_variables[target.id] = line_number
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for item in target.elts:
+                self._track_assignment_target(item, line_number)
     
     def visit_Name(self, node):
-        # Track variable usage (not assignments)
+        # Track variable usage (not assignments).
         if isinstance(node.ctx, ast.Load):
             self.used_variables.add(node.id)
+            self.used_classes.add(node.id)
+            self._mark_parameter_used(node.id)
         self.generic_visit(node)
+
+    def _mark_parameter_used(self, name):
+        """Mark method parameters as used, respecting shadowing by inner functions."""
+        for context in reversed(self.parameter_context_stack):
+            if name in context:
+                qualified_name = context[name]
+                if qualified_name:
+                    self.used_method_parameters.add(qualified_name)
+                return
     
     def visit_Import(self, node):
-        # Track imports
+        # For "import os.path", Python binds the top-level name "os".
         for alias in node.names:
-            name = alias.asname if alias.asname else alias.name
+            name = alias.asname if alias.asname else alias.name.split(".")[0]
             self.imports[name] = node.lineno
             if alias.asname:
                 self.import_aliases[alias.asname] = alias.name
         self.generic_visit(node)
     
     def visit_ImportFrom(self, node):
-        # Track from imports
         for alias in node.names:
             name = alias.asname if alias.asname else alias.name
             self.imports[name] = node.lineno
@@ -68,16 +150,13 @@ class DeadCodeAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
     
     def get_dead_functions(self):
-        """Returns functions that are defined but never called."""
-        # Exclude main entry point and special methods
-        special = {'__main__', '__init__', '__str__', '__repr__', '__eq__'}
-        return self.defined_functions - self.called_functions - special
+        """Returns functions/methods that are defined but never called."""
+        return self.defined_functions - self.called_functions - COMMON_DUNDER_METHODS
     
     def get_unused_variables(self):
         """Returns variables that are assigned but never used."""
         unused = {}
         for var, line in self.defined_variables.items():
-            # Exclude variables that are used or are function parameters
             if var not in self.used_variables and var not in self.function_parameters:
                 unused[var] = line
         return unused
@@ -86,12 +165,25 @@ class DeadCodeAnalyzer(ast.NodeVisitor):
         """Returns imports that are never referenced."""
         unused = {}
         for imp_name, line in self.imports.items():
-            # Check if import is used as a name or attribute
-            if imp_name not in self.used_variables:
-                # Check if it's used via attribute access (e.g., os.path)
-                original = self.import_aliases.get(imp_name, imp_name)
-                if original not in self.used_variables:
-                    unused[imp_name] = line
+            original = self.import_aliases.get(imp_name, imp_name)
+            if imp_name not in self.used_variables and original not in self.used_variables:
+                unused[imp_name] = line
+        return unused
+
+    def get_unused_classes(self):
+        """Returns classes that are defined but never referenced."""
+        unused = {}
+        for class_name, line in self.defined_classes.items():
+            if class_name not in self.used_classes and class_name not in self.used_variables:
+                unused[class_name] = line
+        return unused
+
+    def get_unused_method_parameters(self):
+        """Returns method parameters that are never used inside their method."""
+        unused = {}
+        for param_name, line in self.method_parameters.items():
+            if param_name not in self.used_method_parameters:
+                unused[param_name] = line
         return unused
 
 
@@ -328,10 +420,149 @@ class SingleFunctionAnalyzer(ast.NodeVisitor):
         return self.has_membership_checks or self.has_equality_comparisons_in_loops
 
 
+class CodeIssueAnalyzer(ast.NodeVisitor):
+    """Detects unreachable code and redundant constant conditions."""
+    def __init__(self):
+        self.unreachable_code = []
+        self.redundant_conditionals = []
+
+    def visit_Module(self, node):
+        self._visit_statement_body(node.body)
+
+    def visit_FunctionDef(self, node):
+        self._visit_statement_body(node.body)
+
+    def visit_AsyncFunctionDef(self, node):
+        self._visit_statement_body(node.body)
+
+    def visit_ClassDef(self, node):
+        self._visit_statement_body(node.body)
+
+    def visit_If(self, node):
+        self._check_constant_condition(node, "if")
+        self.visit(node.test)
+        self._visit_statement_body(node.body)
+        self._visit_statement_body(node.orelse)
+
+    def visit_While(self, node):
+        self._check_constant_condition(node, "while")
+        self.visit(node.test)
+        self._visit_statement_body(node.body)
+        self._visit_statement_body(node.orelse)
+
+    def visit_For(self, node):
+        self.visit(node.iter)
+        self._visit_statement_body(node.body)
+        self._visit_statement_body(node.orelse)
+
+    def visit_With(self, node):
+        self._visit_statement_body(node.body)
+
+    def visit_Try(self, node):
+        self._visit_statement_body(node.body)
+        for handler in node.handlers:
+            self._visit_statement_body(handler.body)
+        self._visit_statement_body(node.orelse)
+        self._visit_statement_body(node.finalbody)
+
+    def _visit_statement_body(self, statements):
+        """Visit a list of statements and flag statements after terminators."""
+        self._check_unreachable_code(statements)
+        for statement in statements:
+            self.visit(statement)
+
+    def _check_unreachable_code(self, statements):
+        found_terminator = None
+        for statement in statements:
+            if found_terminator is not None:
+                self.unreachable_code.append(
+                    {
+                        "line": statement.lineno,
+                        "reason": f"appears after {found_terminator}",
+                    }
+                )
+            if self._is_terminating_statement(statement):
+                found_terminator = self._terminator_name(statement)
+
+    def _is_terminating_statement(self, statement):
+        return (
+            isinstance(statement, (ast.Return, ast.Raise))
+            or self._is_exit_call(statement)
+        )
+
+    def _terminator_name(self, statement):
+        if isinstance(statement, ast.Return):
+            return "return"
+        if isinstance(statement, ast.Raise):
+            return "raise"
+        return "exit"
+
+    def _is_exit_call(self, statement):
+        """Detect exit(), quit(), sys.exit(), and os._exit() calls."""
+        if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+            return False
+
+        func = statement.value.func
+        if isinstance(func, ast.Name):
+            return func.id in {"exit", "quit"}
+        if isinstance(func, ast.Attribute):
+            if func.attr == "exit" and isinstance(func.value, ast.Name):
+                return func.value.id == "sys"
+            if func.attr == "_exit" and isinstance(func.value, ast.Name):
+                return func.value.id == "os"
+        return False
+
+    def _check_constant_condition(self, node, keyword):
+        """Flag branches such as if True:, if False:, and while False:."""
+        if isinstance(node.test, ast.Constant) and isinstance(node.test.value, bool):
+            self.redundant_conditionals.append(
+                {
+                    "line": node.lineno,
+                    "type": keyword,
+                    "value": node.test.value,
+                }
+            )
+
+
+def find_duplicate_code_blocks(source_code, block_size=5):
+    """Find repeated blocks of 5+ identical consecutive non-empty lines."""
+    lines = source_code.splitlines()
+    seen_blocks = {}
+    duplicates = []
+    reported_pairs = set()
+
+    if len(lines) < block_size:
+        return duplicates
+
+    for index in range(len(lines) - block_size + 1):
+        block = tuple(line.strip() for line in lines[index:index + block_size])
+        if any(not line for line in block):
+            continue
+
+        if block in seen_blocks:
+            first_start = seen_blocks[block]
+            pair = (first_start, index)
+            if pair not in reported_pairs:
+                duplicates.append(
+                    {
+                        "first_start": first_start + 1,
+                        "first_end": first_start + block_size,
+                        "duplicate_start": index + 1,
+                        "duplicate_end": index + block_size,
+                    }
+                )
+                reported_pairs.add(pair)
+        else:
+            seen_blocks[block] = index
+
+    return duplicates
+
+
 # ---- OPTIMIZATION SUGGESTIONS ----
-def generate_suggestions(function_data, dead_code_data):
+def generate_suggestions(function_data, dead_code_data, issue_data=None):
     """Generate high-level optimization suggestions."""
     suggestions = []
+    issue_data = issue_data or {}
     
     # Check for high complexity functions
     for func_name, data in function_data.items():
@@ -392,13 +623,48 @@ def generate_suggestions(function_data, dead_code_data):
             f"Unused imports detected: {imp_list}. "
             "Consider removing them to reduce dependencies."
         )
+
+    unused_classes = dead_code_data.get_unused_classes()
+    if unused_classes:
+        class_list = ', '.join(list(unused_classes.keys())[:5])
+        suggestions.append(
+            f"Unused classes detected: {class_list}. "
+            "Consider removing them if they are not part of the public API."
+        )
+
+    unused_params = dead_code_data.get_unused_method_parameters()
+    if unused_params:
+        param_list = ', '.join(list(unused_params.keys())[:5])
+        suggestions.append(
+            f"Unused method parameters detected: {param_list}. "
+            "Consider removing them if they are not required by an interface."
+        )
+
+    if issue_data.get("unreachable_code"):
+        suggestions.append(
+            "Unreachable code detected. Consider removing statements that appear "
+            "after return, raise, or exit calls."
+        )
+
+    if issue_data.get("redundant_conditionals"):
+        suggestions.append(
+            "Redundant constant conditions detected. Consider simplifying branches "
+            "such as if True, if False, or while False."
+        )
+
+    if issue_data.get("duplicate_blocks"):
+        suggestions.append(
+            "Duplicated code blocks detected. Consider extracting repeated logic "
+            "into a small helper function."
+        )
     
     return suggestions
 
 
 # ---- REPORT GENERATION ----
-def generate_report(function_data, dead_code_data, suggestions):
+def generate_report(function_data, dead_code_data, suggestions, issue_data=None):
     """Generate a structured text report."""
+    issue_data = issue_data or {}
     report = []
     report.append("=" * 60)
     report.append("STATIC CODE ANALYSIS REPORT")
@@ -449,6 +715,51 @@ def generate_report(function_data, dead_code_data, suggestions):
             report.append(f"  - {imp} (line {line})")
     else:
         report.append("\n  ✓ No unused imports detected.")
+
+    unused_classes = dead_code_data.get_unused_classes()
+    if unused_classes:
+        report.append(f"\nUnused Classes ({len(unused_classes)}):")
+        for class_name, line in sorted(unused_classes.items(), key=lambda x: x[1]):
+            report.append(f"  - {class_name} (line {line})")
+    else:
+        report.append("\n  ✓ No unused classes detected.")
+
+    unused_params = dead_code_data.get_unused_method_parameters()
+    if unused_params:
+        report.append(f"\nUnused Method Parameters ({len(unused_params)}):")
+        for param, line in sorted(unused_params.items(), key=lambda x: x[1]):
+            report.append(f"  - {param} (line {line})")
+    else:
+        report.append("\n  ✓ No unused method parameters detected.")
+
+    unreachable_code = issue_data.get("unreachable_code", [])
+    if unreachable_code:
+        report.append(f"\nUnreachable Code ({len(unreachable_code)}):")
+        for item in unreachable_code:
+            report.append(f"  - line {item['line']} ({item['reason']})")
+    else:
+        report.append("\n  ✓ No unreachable code detected.")
+
+    redundant_conditionals = issue_data.get("redundant_conditionals", [])
+    if redundant_conditionals:
+        report.append(f"\nRedundant Conditional Branches ({len(redundant_conditionals)}):")
+        for item in redundant_conditionals:
+            report.append(
+                f"  - line {item['line']} ({item['type']} condition is {item['value']})"
+            )
+    else:
+        report.append("\n  ✓ No redundant conditional branches detected.")
+
+    duplicate_blocks = issue_data.get("duplicate_blocks", [])
+    if duplicate_blocks:
+        report.append(f"\nDuplicated Code Blocks ({len(duplicate_blocks)}):")
+        for item in duplicate_blocks:
+            report.append(
+                f"  - lines {item['duplicate_start']}-{item['duplicate_end']} "
+                f"duplicate lines {item['first_start']}-{item['first_end']}"
+            )
+    else:
+        report.append("\n  ✓ No duplicated code blocks detected.")
     report.append("")
     
     # Section 3: Optimization Suggestions
@@ -483,12 +794,31 @@ def analyze_source(source_code: str) -> str:
     # Analyze dead code
     dead_code_analyzer = DeadCodeAnalyzer()
     dead_code_analyzer.visit(tree)
+
+    # Analyze unreachable code and constant conditional branches
+    code_issue_analyzer = CodeIssueAnalyzer()
+    code_issue_analyzer.visit(tree)
+
+    issue_data = {
+        "unreachable_code": code_issue_analyzer.unreachable_code,
+        "redundant_conditionals": code_issue_analyzer.redundant_conditionals,
+        "duplicate_blocks": find_duplicate_code_blocks(source_code),
+    }
     
     # Generate suggestions
-    suggestions = generate_suggestions(function_analyzer.functions, dead_code_analyzer)
+    suggestions = generate_suggestions(
+        function_analyzer.functions,
+        dead_code_analyzer,
+        issue_data,
+    )
     
     # Generate report text
-    return generate_report(function_analyzer.functions, dead_code_analyzer, suggestions)
+    return generate_report(
+        function_analyzer.functions,
+        dead_code_analyzer,
+        suggestions,
+        issue_data,
+    )
 
 
 def analyze_file(filename: str) -> None:

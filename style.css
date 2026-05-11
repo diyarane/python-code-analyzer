@@ -161,6 +161,131 @@ body {
   display: none;
 }
 
+.analysis-sections {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.analysis-section {
+  border: 1px solid rgba(108, 99, 140, 0.14);
+  border-left: 5px solid #c7b6ff;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  overflow: hidden;
+}
+
+.analysis-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.analysis-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-title {
+  color: #4b3b72;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.count-badge {
+  min-width: 28px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.findings-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.finding-item,
+.empty-finding {
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-size: 0.84rem;
+}
+
+.finding-item {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(108, 99, 140, 0.12);
+}
+
+.finding-meta {
+  color: #6b6b88;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.finding-description {
+  color: #3f3f56;
+  margin-bottom: 6px;
+}
+
+.finding-snippet {
+  display: block;
+  background: #f7f4ff;
+  border-radius: 8px;
+  color: #4b3b72;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.78rem;
+  padding: 7px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty-finding {
+  background: rgba(232, 248, 238, 0.9);
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.analysis-section--unused {
+  border-left-color: #f6a04d;
+}
+
+.analysis-section--unused .count-badge {
+  background: #f6a04d;
+}
+
+.analysis-section--unreachable {
+  border-left-color: #ef5b68;
+}
+
+.analysis-section--unreachable .count-badge {
+  background: #ef5b68;
+}
+
+.analysis-section--redundant {
+  border-left-color: #e9c74b;
+}
+
+.analysis-section--redundant .count-badge {
+  background: #d8ad25;
+}
+
+.analysis-section--duplicates {
+  border-left-color: #6daeea;
+}
+
+.analysis-section--duplicates .count-badge {
+  background: #6daeea;
+}
+
 .report {
   background: #1e2230;
   color: #eaeefc;
