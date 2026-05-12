@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeAnalyzer AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="navbar">
+      <a class="brand" href="#" aria-label="CodeAnalyzer AI home">
+        <span class="brand-mark">CA</span>
+        <span>
+          <strong>CodeAnalyzer AI</strong>
+          <small>Static intelligence platform</small>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <input id="file-input" class="file-input" type="file" accept=".py" />
+        <button id="upload-btn" class="btn btn-secondary" type="button">
+          Upload
+        </button>
+        <button id="analyze-btn" class="btn btn-primary" type="button">
+          Analyze
+        </button>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+          <span id="theme-label">Light</span>
+        </button>
+      </div>
+    </nav>
+
+    <main class="dashboard">
+      <section class="panel editor-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Input</p>
+            <h1>Python Editor</h1>
+          </div>
+          <span id="file-status" class="status-pill">Mock sample loaded</span>
+        </div>
+        <div id="editor" class="editor"></div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Analysis</p>
+            <h2>Results Overview</h2>
+          </div>
+          <span id="analysis-state" class="status-pill status-pill-idle">Ready</span>
+        </div>
+
+        <div id="metrics-grid" class="metrics-grid">
+          <article class="metric-card placeholder-card">
+            <span class="metric-label">Awaiting analysis</span>
+            <strong class="metric-value">Run Analyze</strong>
+            <p class="metric-copy">Metrics will appear here using mock data.</p>
+          </article>
+        </div>
+      </section>
+
+      <aside class="panel ai-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Assistant</p>
+            <h2>AI Explanation</h2>
+          </div>
+          <span class="pulse-dot" aria-hidden="true"></span>
+        </div>
+
+        <div id="ai-output" class="ai-output">
+          Click <strong>Analyze</strong> to generate an AI-style explanation for the current code.
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
