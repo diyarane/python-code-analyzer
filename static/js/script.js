@@ -18,8 +18,15 @@ const fileStatus = document.getElementById("file-status");
 const analysisState = document.getElementById("analysis-state");
 const metricsGrid = document.getElementById("metrics-grid");
 const aiOutput = document.getElementById("ai-output");
+const astWarning = document.getElementById("ast-warning");
 
 let editor = null;
+let activeDecorations = [];
+let analyzeTimer = null;
+
+const astVisualizer = new window.AstVisualizer("ast-visualization", {
+  onNodeClick: (node) => highlightEditorLine(node.line),
+});
 
 function getSavedTheme() {
   return localStorage.getItem("codeanalyzer-theme") || "dark";
@@ -58,62 +65,155 @@ function initializeMonaco() {
       smoothScrolling: true,
       roundedSelection: true,
       cursorBlinking: "smooth",
+      glyphMargin: true,
     });
   });
 }
 
-function renderMetricCards() {
+function highlightEditorLine(line) {
+  if (!editor || !window.monaco || !line) {
+    return;
+  }
+
+  activeDecorations = editor.deltaDecorations(activeDecorations, [
+    {
+      range: new window.monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: true,
+        className: "monaco-highlight-line",
+        glyphMarginClassName: "monaco-highlight-glyph",
+      },
+    },
+  ]);
+
+  editor.revealLineInCenter(line);
+}
+
+function renderMetricCards(metrics) {
+  const score = metrics.optimization_score;
+
   metricsGrid.innerHTML = `
     <article class="metric-card">
       <span class="metric-label">Time Complexity</span>
-      <strong class="metric-value">O(n<sup>2</sup>)</strong>
-      <p class="metric-copy">Nested loops compare pairs of array elements.</p>
+      <strong class="metric-value">${metrics.time_complexity}</strong>
+      <p class="metric-copy">Estimated from maximum loop nesting depth.</p>
     </article>
 
     <article class="metric-card">
       <span class="metric-label">Space Complexity</span>
-      <strong class="metric-value">O(1)</strong>
-      <p class="metric-copy">Only a small helper list is tracked in this mock.</p>
+      <strong class="metric-value">${metrics.space_complexity}</strong>
+      <p class="metric-copy">Estimated from data structures and recursion patterns.</p>
     </article>
 
     <article class="metric-card">
       <span class="metric-label">Dead Code</span>
-      <strong class="metric-value">2</strong>
-      <p class="metric-copy">2 unused functions detected in the sample report.</p>
+      <strong class="metric-value">${metrics.dead_code_count}</strong>
+      <p class="metric-copy">Unused functions plus unreachable statements.</p>
     </article>
 
     <article class="metric-card">
       <span class="metric-label">Optimization Score</span>
-      <strong class="metric-value">67/100</strong>
-      <div class="progress-track" aria-label="Optimization score 67 out of 100">
-        <div class="progress-fill"></div>
+      <strong class="metric-value">${score}/100</strong>
+      <div class="progress-track" aria-label="Optimization score ${score} out of 100">
+        <div class="progress-fill" style="width: ${score}%"></div>
       </div>
-      <p class="metric-copy">Good baseline, but nested lookups need attention.</p>
+      <p class="metric-copy">Penalizes nested loops, inefficient recursion, and deep conditions.</p>
     </article>
   `;
 }
 
-function renderAiExplanation() {
+function renderAiExplanation(metrics, warnings = []) {
+  const complexityNote =
+    metrics.max_loop_depth > 1
+      ? `This code contains nested loops, producing ${metrics.time_complexity} time complexity. Consider replacing repeated scans with a dictionary or set when the loop is performing lookups.`
+      : `This code has low loop nesting, so the estimated time complexity is ${metrics.time_complexity}.`;
+
+  const recursionNote = metrics.has_inefficient_recursion
+    ? " A Fibonacci-style recursive pattern was detected, which may grow exponentially without memoization."
+    : "";
+
+  const warningHtml = warnings.length
+    ? `<p class="warning-note">${warnings.join("<br>")}</p>`
+    : "";
+
   aiOutput.innerHTML = `
     <article class="explanation-card">
       <span class="insight-tag">AI Insight</span>
+      <p><strong>${complexityNote}</strong>${recursionNote}</p>
       <p>
-        <strong>This function has nested loops causing O(n<sup>2</sup>) complexity.</strong>
-        Consider using a hash map to reduce to O(n).
+        The AST tree highlights expensive nodes in red, moderate nodes in yellow,
+        and lightweight structural nodes in green.
       </p>
+      ${warningHtml}
     </article>
   `;
 }
 
-function runMockAnalysis() {
-  analysisState.textContent = "Analyzing";
-  analysisState.classList.add("status-pill-idle");
+function renderError(error) {
+  analysisState.textContent = "Syntax error";
+  astWarning.textContent = error.line ? `Line ${error.line}` : "Error";
 
-  window.setTimeout(() => {
-    renderMetricCards();
-    renderAiExplanation();
-    analysisState.textContent = "Mock results";
-  }, 350);
+  metricsGrid.innerHTML = `
+    <article class="metric-card placeholder-card">
+      <span class="metric-label">${error.error || "Analysis Error"}</span>
+      <strong class="metric-value">Failed</strong>
+      <p class="metric-copy">${error.message || "Unable to analyze this code."}</p>
+    </article>
+  `;
+
+  document.getElementById("ast-visualization").innerHTML = `
+    <div class="ast-empty-state ast-error-state">
+      ${error.message || "Unable to render AST."}
+    </div>
+  `;
+
+  aiOutput.innerHTML = `
+    <article class="explanation-card">
+      <span class="insight-tag">Parser Feedback</span>
+      <p><strong>${error.error || "Error"}</strong>: ${error.message || "Check the Python syntax and try again."}</p>
+    </article>
+  `;
+
+  if (error.line) {
+    highlightEditorLine(error.line);
+  }
+}
+
+async function runAstAnalysis() {
+  const code = editor ? editor.getValue() : DEFAULT_CODE;
+
+  analyzeBtn.disabled = true;
+  analysisState.textContent = "Parsing AST";
+  astWarning.textContent = "Analyzing";
+
+  try {
+    const result = await window.AstApi.analyzeAst(code);
+
+    if (!result.success) {
+      renderError(result);
+      return;
+    }
+
+    renderMetricCards(result.metrics);
+    renderAiExplanation(result.metrics, result.warnings || []);
+    astVisualizer.render(result.ast);
+
+    analysisState.textContent = "AST ready";
+    astWarning.textContent = `${result.node_count} nodes`;
+  } catch (error) {
+    renderError({
+      error: "NetworkError",
+      message: "Could not reach the Flask AST analysis endpoint.",
+      line: null,
+    });
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+}
+
+function debouncedAnalyze() {
+  window.clearTimeout(analyzeTimer);
+  analyzeTimer = window.setTimeout(runAstAnalysis, 500);
 }
 
 function loadUploadedFile(file) {
@@ -150,8 +250,9 @@ fileInput.addEventListener("change", () => {
   }
 });
 
-analyzeBtn.addEventListener("click", runMockAnalysis);
+analyzeBtn.addEventListener("click", debouncedAnalyze);
 themeToggle.addEventListener("click", toggleTheme);
 
 applyTheme(getSavedTheme());
 initializeMonaco();
+

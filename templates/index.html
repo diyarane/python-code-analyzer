@@ -59,6 +59,21 @@
             <p class="metric-copy">Metrics will appear here using mock data.</p>
           </article>
         </div>
+
+        <div class="ast-panel">
+          <div class="ast-toolbar">
+            <div>
+              <p class="eyebrow">Compiler View</p>
+              <h2>Interactive AST</h2>
+            </div>
+            <span id="ast-warning" class="status-pill">Waiting for code</span>
+          </div>
+          <div id="ast-visualization" class="ast-visualization">
+            <div class="ast-empty-state">
+              Run analysis to generate an interactive syntax tree.
+            </div>
+          </div>
+        </div>
       </section>
 
       <aside class="panel ai-panel">
@@ -78,6 +93,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/astVisualizer.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
