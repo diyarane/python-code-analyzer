@@ -6,6 +6,7 @@ import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { AuthModal } from './components/AuthModal';
+import { SaveTitleModal } from './components/SaveTitleModal';
 import { HomePage } from './components/HomePage';
 import { HistoryPage } from './components/HistoryPage';
 import { useAnalysisSocket } from './hooks/useAnalysisSocket';
@@ -42,9 +43,11 @@ export const App: React.FC = () => {
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
 
-  // Auth Modal State
+  // Auth & Save State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
 
@@ -71,6 +74,11 @@ export const App: React.FC = () => {
     localStorage.setItem('codeanalyzer-theme', theme);
   }, [theme]);
 
+  const handleCodeChange = (newCode: string) => {
+    setCode(newCode);
+    setIsSaved(false);
+  };
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -78,6 +86,7 @@ export const App: React.FC = () => {
   const handleFileUpload = (newCode: string, filename: string) => {
     setCode(newCode);
     setFileStatus(filename);
+    setIsSaved(false);
   };
 
   const handleClearCode = () => {
@@ -86,12 +95,14 @@ export const App: React.FC = () => {
     setAnalysisResponse(null);
     setHighlightLine(null);
     setAnalysisState('Ready');
+    setIsSaved(false);
   };
 
   const handleResetExample = () => {
     setCode(DEFAULT_CODE);
     setFileStatus('Mock sample loaded');
     setHighlightLine(null);
+    setIsSaved(false);
   };
 
   const runAnalyze = useCallback(() => {
@@ -99,6 +110,7 @@ export const App: React.FC = () => {
 
     setAnalysisState('Analyzing…');
     setHighlightLine(null);
+    setIsSaved(false);
 
     const handleSuccess = (res: AnalyzeResponse) => {
       setAnalysisResponse(res);
@@ -135,7 +147,16 @@ export const App: React.FC = () => {
     setIsAuthModalOpen(true);
   };
 
-  const handleSaveAnalysis = async () => {
+  const handleInitiateSave = () => {
+    if (!user) {
+      handleOpenAuthModal('login');
+      return;
+    }
+    if (!analysisResponse || !analysisResponse.success) return;
+    setIsSaveModalOpen(true);
+  };
+
+  const handleConfirmSave = async (title: string) => {
     if (!analysisResponse || !analysisResponse.success) return;
     try {
       const resp = await fetch('/api/history', {
@@ -143,12 +164,13 @@ export const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          title: title,
           source_code: code,
           analysis_result: analysisResponse,
         }),
       });
       if (resp.ok) {
-        alert('Analysis saved successfully to your history!');
+        setIsSaved(true);
       } else {
         alert('Failed to save analysis.');
       }
@@ -160,13 +182,15 @@ export const App: React.FC = () => {
   const handleLoadSnippet = (selectedCode: string, res: AnalyzeResponse) => {
     setCode(selectedCode);
     setAnalysisResponse(res);
-    setFileStatus('Loaded from history');
+    setFileStatus('Restored from History');
     setHighlightLine(null);
-    setAnalysisState('Ready');
+    setAnalysisState('Restored');
+    setIsSaved(true);
   };
 
   const errorLine = !analysisResponse?.success ? analysisResponse?.line ?? null : null;
   const errorMessage = !analysisResponse?.success ? analysisResponse?.message ?? null : null;
+  const defaultSaveTitle = `Analysis — ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
     <div className="app-shell">
@@ -178,7 +202,7 @@ export const App: React.FC = () => {
         onAnalyze={runAnalyze}
         onFileUpload={handleFileUpload}
         onOpenAuthModal={handleOpenAuthModal}
-        onSaveAnalysis={handleSaveAnalysis}
+        onSaveAnalysis={handleInitiateSave}
         canSave={!!analysisResponse && !!analysisResponse.success}
         isAnalyzing={isAnalyzing}
         fileStatus={fileStatus}
@@ -204,7 +228,7 @@ export const App: React.FC = () => {
         <main className="dashboard">
           <CodeEditor
             value={code}
-            onChange={setCode}
+            onChange={handleCodeChange}
             onAnalyze={runAnalyze}
             onClear={handleClearCode}
             onResetExample={handleResetExample}
@@ -224,7 +248,9 @@ export const App: React.FC = () => {
               </div>
               <span
                 className={`status-pill ${
-                  analysisState === 'Ready' ? 'status-pill-idle' : ''
+                  analysisState === 'Ready' || analysisState === 'Restored'
+                    ? 'status-pill-idle'
+                    : ''
                 }`}
               >
                 {analysisState}
@@ -259,6 +285,9 @@ export const App: React.FC = () => {
             }
             error={!analysisResponse?.success ? analysisResponse?.error : null}
             errorMessage={errorMessage}
+            onSaveExplanation={handleInitiateSave}
+            isSaved={isSaved}
+            canSave={!!analysisResponse && !!analysisResponse.success}
           />
         </main>
       )}
@@ -267,6 +296,13 @@ export const App: React.FC = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
+      />
+
+      <SaveTitleModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={handleConfirmSave}
+        defaultTitle={defaultSaveTitle}
       />
     </div>
   );

@@ -5,12 +5,18 @@ interface AnalysisPanelProps {
   explanations: Explanations | null;
   error?: string | null;
   errorMessage?: string | null;
+  onSaveExplanation?: () => void;
+  isSaved?: boolean;
+  canSave?: boolean;
 }
 
 export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   explanations,
   error,
   errorMessage,
+  onSaveExplanation,
+  isSaved = false,
+  canSave = false,
 }) => {
   return (
     <aside className="panel ai-panel">
@@ -19,7 +25,21 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
           <p className="eyebrow">Assistant</p>
           <h2>AI Explanation</h2>
         </div>
-        <span className="pulse-dot" aria-hidden="true"></span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {canSave && onSaveExplanation && (
+            <button
+              type="button"
+              className={`btn ${isSaved ? 'btn-secondary' : 'btn-primary'} nav-btn-sm`}
+              onClick={onSaveExplanation}
+              disabled={isSaved}
+              title={isSaved ? 'Analysis saved to your history' : 'Save analysis to your account history'}
+            >
+              {isSaved ? 'Saved ✓' : 'Save Explanation'}
+            </button>
+          )}
+          <span className="pulse-dot" aria-hidden="true"></span>
+        </div>
       </div>
 
       <div className="ai-output">

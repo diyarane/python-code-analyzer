@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request
 from auth import get_current_user
 from extensions import db
@@ -31,7 +32,7 @@ def save_history():
     data = request.get_json(silent=True) or {}
     source_code = data.get("source_code", "")
     analysis_result = data.get("analysis_result")
-    title = data.get("title", "")
+    title = str(data.get("title", "")).strip()
 
     if not source_code or not analysis_result:
         return (
@@ -39,10 +40,14 @@ def save_history():
             400,
         )
 
-    # Infer title if empty
+    # Sensible default title if not provided
     if not title:
-        first_line = source_code.strip().split("\n")[0][:40]
-        title = first_line if first_line else "Python Snippet"
+        first_line = source_code.strip().split("\n")[0][:30]
+        if first_line.startswith("def ") or first_line.startswith("class "):
+            title = first_line
+        else:
+            date_str = datetime.now(timezone.utc).strftime("%b %d, %Y")
+            title = f"Analysis — {date_str}"
 
     record = AnalysisHistory(
         user_id=user.id,
