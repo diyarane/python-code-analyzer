@@ -17,6 +17,7 @@ export function convertAstToReactFlow(astRoot: ASTNode): { nodes: Node[]; edges:
       type: astNode.type,
       label: astNode.label || astNode.type,
       line: astNode.line,
+      end_line: astNode.end_line ?? astNode.line,
       complexity: astNode.complexity,
       complexity_weight: astNode.complexity_weight || 1,
       metadata: astNode.metadata || {},

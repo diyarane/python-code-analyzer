@@ -31,6 +31,7 @@ interface AstVisualizerProps {
   cached?: boolean;
   onSelectNode: (line: number | null) => void;
   sourceCode?: string;
+  languageDisplayName?: string;
 }
 
 const nodeTypes = {
@@ -45,6 +46,7 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
   cached,
   onSelectNode,
   sourceCode = '',
+  languageDisplayName = 'Code',
 }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -158,7 +160,7 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
                   <div className="popover-section">
                     <h4>What is an AST?</h4>
                     <p>
-                      An Abstract Syntax Tree (AST) represents your Python code as a structured tree of statements, expressions, functions, loops, and other language constructs.
+                      An Abstract Syntax Tree (AST) represents your {languageDisplayName} code as a structured tree of statements, expressions, functions, loops, and other language constructs.
                     </p>
                   </div>
                   <div className="popover-section">
@@ -172,7 +174,7 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
             </div>
           </div>
           <p className="section-subtitle">
-            Explore the structure of the analyzed Python code.
+            Explore the structure of the analyzed {languageDisplayName} code.
             {astData && !errorMessage && (
               <span className="ast-node-count-meta"> · {nodeCount ?? '?'} nodes</span>
             )}
@@ -184,151 +186,164 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
         <div className="section-header-actions">
           <div className="ast-btn-group" role="group" aria-label="AST view controls">
             <button
-              className="btn btn-secondary nav-btn-sm"
               type="button"
+              className="btn btn-secondary nav-btn-sm icon-only-btn"
               onClick={handleZoomIn}
               title="Zoom In"
-              aria-label="Zoom in"
+              aria-label="Zoom In"
             >
               <IconZoomIn size={15} />
             </button>
             <button
-              className="btn btn-secondary nav-btn-sm"
               type="button"
+              className="btn btn-secondary nav-btn-sm icon-only-btn"
               onClick={handleZoomOut}
               title="Zoom Out"
-              aria-label="Zoom out"
+              aria-label="Zoom Out"
             >
               <IconZoomOut size={15} />
             </button>
-
             <button
-              className="btn btn-secondary nav-btn-sm"
               type="button"
+              className="btn btn-secondary nav-btn-sm icon-only-btn"
               onClick={handleResetZoom}
               title="Fit View"
-              aria-label="Fit AST to view"
+              aria-label="Fit View"
             >
-              <IconScanSearch size={15} /> Fit View
-            </button>
-
-            <button
-              className="btn btn-secondary nav-btn-sm expand-ast-btn"
-              type="button"
-              onClick={() => setIsFullscreen((prev) => !prev)}
-              title={isFullscreen ? 'Close Fullscreen (Esc)' : 'Fullscreen AST Workspace'}
-              aria-label={isFullscreen ? 'Close expanded AST' : 'Expand AST'}
-            >
-              {isFullscreen ? <IconMinimize2 size={15} /> : <IconMaximize2 size={15} />}
+              <IconScanSearch size={15} />
             </button>
           </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary nav-btn-sm expand-btn"
+            onClick={() => setIsFullscreen((prev) => !prev)}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Expand AST Canvas'}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Expand AST Canvas'}
+          >
+            {isFullscreen ? (
+              <>
+                <IconMinimize2 size={14} /> Exit Fullscreen
+              </>
+            ) : (
+              <>
+                <IconMaximize2 size={14} /> Expand
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className={`ast-workspace-body ${selectedNodeData ? 'has-inspector' : ''}`}>
-        <div className="ast-container">
-          {errorMessage ? (
-            <div className="ast-empty-state ast-error-state">
-              <strong>Unable to build AST</strong>
-              <p>{errorMessage}</p>
-            </div>
-          ) : !astData ? (
-            <div className="ast-empty-state">
-              Run analysis to generate an interactive syntax tree.
-            </div>
-          ) : (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onNodeClick={handleNodeClick}
-              nodeTypes={nodeTypes}
-              fitView
-              minZoom={0.2}
-              maxZoom={2.5}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background color="rgba(255, 255, 255, 0.08)" gap={24} size={1} />
-              <MiniMap
-                style={{
-                  backgroundColor: '#121212',
-                  border: '1px solid #262626',
-                  borderRadius: '6px',
-                }}
-                nodeColor={(n) => {
-                  const w = n.data?.complexity_weight;
-                  if (w === 3) return '#ef4444';
-                  if (w === 2) return '#f59e0b';
-                  return '#10b981';
-                }}
-                maskColor="rgba(8, 8, 8, 0.75)"
-              />
-            </ReactFlow>
-          )}
-        </div>
+      <div className="ast-canvas-container">
+        {errorMessage ? (
+          <div className="ast-empty-state error">
+            <p>{errorMessage}</p>
+          </div>
+        ) : !astData ? (
+          <div className="ast-empty-state">
+            <p>No AST data available. Run analysis to render graph.</p>
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={handleNodeClick}
+            nodeTypes={nodeTypes}
+            minZoom={0.1}
+            maxZoom={2.5}
+            fitViewOptions={{ padding: 0.2 }}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background color="rgba(142, 233, 255, 0.08)" gap={20} size={1} />
+            <MiniMap
+              nodeColor={(node) => {
+                const color = node.data?.complexity?.color;
+                if (color === 'red') return '#ef4444';
+                if (color === 'yellow') return '#f59e0b';
+                return '#10b981';
+              }}
+              maskColor="rgba(15, 23, 42, 0.7)"
+              style={{
+                backgroundColor: 'var(--surface-card)',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+              }}
+            />
+          </ReactFlow>
+        )}
 
-        {/* Contextual Source Code Inspection Panel */}
-        {selectedNodeData && snippetData && (
-          <aside className="source-inspector-panel">
-            <div className="inspector-header">
-              <div className="inspector-header-title">
-                <p className="eyebrow">SOURCE INSPECTION</p>
-                <h3>
-                  {selectedNodeData.type}
-                  <span className="line-badge">
-                    {snippetData.startLine === snippetData.endLine
-                      ? `Line ${snippetData.startLine}`
-                      : `Lines ${snippetData.startLine}–${snippetData.endLine}`}
-                  </span>
-                </h3>
+        {/* Selected Node Details Drawer / Popover Inspector */}
+        {selectedNodeData && (
+          <div className="node-inspector-drawer">
+            <div className="drawer-header">
+              <div className="drawer-title-badge">
+                <span className={`complexity-dot ${selectedNodeData.complexity?.color || 'green'}`} />
+                <span className="drawer-type-label">{selectedNodeData.type}</span>
               </div>
               <button
                 type="button"
-                className="icon-btn close-inspector-btn"
+                className="icon-btn drawer-close-btn"
                 onClick={() => setSelectedNodeData(null)}
-                aria-label="Close source inspector"
-                title="Close source inspector"
+                aria-label="Close inspector"
+                title="Close inspector"
               >
-                <IconX size={15} />
+                <IconX size={14} />
               </button>
             </div>
 
-            <div className="inspector-content">
-              {selectedNodeData.label && (
-                <div className="inspector-meta-label">
-                  <strong>Node:</strong> {selectedNodeData.label}
-                </div>
-              )}
-              {selectedNodeData.complexity?.reason && (
-                <div className="inspector-meta-reason">
-                  <strong>Complexity Note:</strong> {selectedNodeData.complexity.reason}
+            <div className="drawer-body">
+              <div className="drawer-row">
+                <span className="drawer-label">Display Label:</span>
+                <strong className="drawer-val">{selectedNodeData.label}</strong>
+              </div>
+
+              {selectedNodeData.line && (
+                <div className="drawer-row">
+                  <span className="drawer-label">Source Range:</span>
+                  <span className="drawer-val">
+                    {selectedNodeData.end_line && selectedNodeData.end_line !== selectedNodeData.line
+                      ? `Lines ${selectedNodeData.line}–${selectedNodeData.end_line}`
+                      : `Line ${selectedNodeData.line}`}
+                  </span>
                 </div>
               )}
 
-              <div className="snippet-code-box">
-                {snippetData.lines.map((l) => (
-                  <div
-                    key={l.lineNumber}
-                    className={`snippet-line ${l.isHighlighted ? 'is-selected-line' : ''}`}
-                  >
-                    <span className="line-num">{l.lineNumber}</span>
-                    <span className="line-code">{l.content}</span>
-                  </div>
-                ))}
-              </div>
+              {selectedNodeData.complexity && (
+                <div className="drawer-row">
+                  <span className="drawer-label">Impact Reason:</span>
+                  <p className="drawer-reason-text">{selectedNodeData.complexity.reason}</p>
+                </div>
+              )}
+
+              {/* Live Source Snippet Code View */}
+              {snippetData && snippetData.lines.length > 0 && (
+                <div className="drawer-snippet-box">
+                  <div className="snippet-header">Source Snippet</div>
+                  <pre className="snippet-code">
+                    {snippetData.lines.map((l) => (
+                      <div
+                        key={l.lineNumber}
+                        className={`snippet-line ${l.isHighlighted ? 'is-target' : ''}`}
+                      >
+                        <span className="snippet-num">{l.lineNumber}</span>
+                        <span className="snippet-text">{l.content}</span>
+                      </div>
+                    ))}
+                  </pre>
+                </div>
+              )}
             </div>
-          </aside>
+          </div>
         )}
       </div>
     </section>
   );
 };
 
-export const AstVisualizer: React.FC<AstVisualizerProps> = (props) => {
-  return (
-    <ReactFlowProvider>
-      <AstFlowCanvas {...props} />
-    </ReactFlowProvider>
-  );
-};
+export const AstVisualizer: React.FC<AstVisualizerProps> = (props) => (
+  <ReactFlowProvider>
+    <AstFlowCanvas {...props} />
+  </ReactFlowProvider>
+);

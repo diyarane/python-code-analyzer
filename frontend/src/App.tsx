@@ -305,6 +305,7 @@ export const App: React.FC = () => {
             cached={analysisResponse?.cached}
             onSelectNode={setHighlightLine}
             sourceCode={code}
+            languageDisplayName={detectedLanguage.displayName}
           />
         </main>
       )}
