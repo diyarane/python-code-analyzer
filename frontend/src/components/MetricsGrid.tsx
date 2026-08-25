@@ -8,6 +8,30 @@ interface MetricsGridProps {
 }
 
 export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorMessage }) => {
+  const getStatusBadge = (metricKey: string, defaultStatus: string = 'estimated') => {
+    const detail = metrics?.metric_status?.[metricKey];
+    const status = detail?.status || defaultStatus;
+
+    if (status === 'unsupported') {
+      return <span className="lang-status-badge is-unsupported" style={{ fontSize: '0.65rem' }}>N/A • Unsupported</span>;
+    }
+    if (status === 'estimated') {
+      return <span className="lang-status-badge is-auto" style={{ fontSize: '0.65rem' }}>Estimated</span>;
+    }
+    if (status === 'available') {
+      return <span className="lang-status-badge is-manual" style={{ fontSize: '0.65rem' }}>Measured</span>;
+    }
+    return null;
+  };
+
+  const getDeadCodeCopy = () => {
+    const detail = metrics?.metric_status?.['dead_code_count'];
+    if (detail?.status === 'unsupported' || metrics?.dead_code_count === null) {
+      return detail?.reason || 'Dead-code control flow analysis is unsupported for this language.';
+    }
+    return 'Unreachable statements and unreferenced definitions.';
+  };
+
   return (
     <section className="workspace-section panel results-section">
       <div className="section-header">
@@ -34,34 +58,52 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
         ) : (
           <div className="metrics-grid">
             <article className="metric-card">
-              <span className="metric-label">Time Complexity</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="metric-label">Time Complexity</span>
+                {getStatusBadge('time_complexity', 'estimated')}
+              </div>
               <strong className="metric-value">{metrics.time_complexity ?? '—'}</strong>
-              <p className="metric-copy">Estimated from loop nesting and recursion analysis.</p>
+              <p className="metric-copy">
+                {metrics.metric_status?.['time_complexity']?.reason || 'Estimated from loop nesting and recursion analysis.'}
+              </p>
             </article>
 
             <article className="metric-card">
-              <span className="metric-label">Space Complexity</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="metric-label">Space Complexity</span>
+                {getStatusBadge('space_complexity', 'estimated')}
+              </div>
               <strong className="metric-value">{metrics.space_complexity ?? '—'}</strong>
-              <p className="metric-copy">Estimated from memory structures and stack depth.</p>
+              <p className="metric-copy">
+                {metrics.metric_status?.['space_complexity']?.reason || 'Estimated from memory structures and stack depth.'}
+              </p>
             </article>
 
             <article className="metric-card">
-              <span className="metric-label">Dead Code</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="metric-label">Dead Code</span>
+                {getStatusBadge('dead_code_count', metrics.dead_code_count !== null ? 'available' : 'unsupported')}
+              </div>
               <strong className="metric-value">
                 {metrics.dead_code_count !== null && metrics.dead_code_count !== undefined
                   ? metrics.dead_code_count
                   : 'N/A'}
               </strong>
-              <p className="metric-copy">Unreachable statements and unreferenced definitions.</p>
+              <p className="metric-copy">{getDeadCodeCopy()}</p>
             </article>
 
             <article className="metric-card">
-              <span className="metric-label">Optimization Score</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="metric-label">Optimization Score</span>
+                {getStatusBadge('optimization_score', 'estimated')}
+              </div>
               <strong className="metric-value">{metrics.optimization_score !== undefined ? `${metrics.optimization_score}/100` : '—'}</strong>
               <div className="progress-track" aria-label={`Optimization score ${metrics.optimization_score} out of 100`}>
                 <div className="progress-fill" style={{ width: `${Math.max(0, Math.min(100, metrics.optimization_score || 0))}%` }}></div>
               </div>
-              <p className="metric-copy">Evaluated against control flow efficiency guidelines.</p>
+              <p className="metric-copy">
+                {metrics.metric_status?.['optimization_score']?.reason || 'Evaluated against control flow efficiency guidelines.'}
+              </p>
             </article>
           </div>
         )}

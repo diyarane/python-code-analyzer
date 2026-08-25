@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Optional
 
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...complexity import analyze_complexity
+from ...normalized_metrics import build_metric_status_map
 from ...utils import count_ast_nodes, safe_unparse
 
 MAX_VISUAL_NODES = 500
@@ -36,6 +37,14 @@ class PythonAnalyzer(BaseAnalyzer):
         _notify("ast_completed", {"node_count": node_count})
 
         metrics = analyze_complexity(raw_ast)
+        metrics["metric_status"] = build_metric_status_map(
+            time_complexity=metrics["time_complexity"],
+            space_complexity=metrics["space_complexity"],
+            dead_code_count=metrics["dead_code_count"],
+            optimization_score=metrics["optimization_score"],
+            dead_code_supported=True,
+            language_display="Python",
+        )
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
             "space_complexity": metrics["space_complexity"]

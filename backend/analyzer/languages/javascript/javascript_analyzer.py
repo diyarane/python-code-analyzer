@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
-from ...utils import big_o_from_loop_depth
+from ...engine import engine
 
 
 class JavaScriptAnalyzer(BaseAnalyzer):
@@ -29,7 +29,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
         node_count = self._count_nodes(root_node)
         _notify("ast_completed", {"node_count": node_count})
 
-        metrics = self._compute_metrics(root_node)
+        metrics = self._compute_metrics(root_node, tree.language_id)
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
             "space_complexity": metrics["space_complexity"]
@@ -58,27 +58,18 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             count += self._count_nodes(child)
         return count
 
-    def _compute_metrics(self, root_node) -> Dict[str, Any]:
+    def _compute_metrics(self, root_node, lang_id: str) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
+        lang_title = "JavaScript/JSX" if "jsx" in lang_id else "JavaScript"
 
-        time_complexity = big_o_from_loop_depth(max_loop_depth)
-        space_complexity = "O(1)" if max_loop_depth == 0 else "O(n)"
-
-        score = 100
-        if max_loop_depth > 1:
-            score -= (max_loop_depth - 1) * 20
-        if max_cond_depth > 3:
-            score -= 10
-
-        return {
-            "time_complexity": time_complexity,
-            "space_complexity": space_complexity,
-            "dead_code_count": None,  # Not evaluated for JS/TS
-            "optimization_score": max(0, min(100, score)),
-            "max_loop_depth": max_loop_depth,
-            "max_condition_depth": max_cond_depth,
-        }
+        return engine.compute_control_flow_metrics(
+            max_loop_depth=max_loop_depth,
+            max_condition_depth=max_cond_depth,
+            dead_code_count=None,
+            dead_code_supported=False,
+            language_display=lang_title,
+        )
 
     def _get_max_loop_depth(self, node, current_depth: int) -> int:
         loop_types = {
@@ -132,7 +123,6 @@ def serialize_ts_node(node, source_code: str, depth: int = 0) -> dict:
     weight = 2 if "statement" in node.type or "declaration" in node.type else 1
 
     children = []
-    # Filter out redundant punctuation tokens for clean visual AST graph
     for child in node.children:
         if child.is_named or child.type in ("arrow_function", "jsx_element", "jsx_self_closing_element"):
             children.append(serialize_ts_node(child, source_code, depth + 1))
@@ -154,16 +144,13 @@ def serialize_ts_node(node, source_code: str, depth: int = 0) -> dict:
 
 
 def format_ts_node_type(raw_type: str) -> str:
-    """Format snake_case Tree-sitter types into PascalCase AST node titles."""
     parts = raw_type.split("_")
     return "".join(p.capitalize() for p in parts)
 
 
 def build_ts_label(node, source_code: str) -> str:
-    """Build a compact, informative node label for D3 rendering."""
     formatted = format_ts_node_type(node.type)
 
-    # Function declarations
     if node.type == "function_declaration":
         name_node = node.child_by_field_name("name")
         if name_node:
@@ -171,14 +158,12 @@ def build_ts_label(node, source_code: str) -> str:
             return f"Function: {name_text}"
         return "Function"
 
-    # Variable declarations
     if node.type in ("lexical_declaration", "variable_declaration"):
         text = source_code[node.start_byte : node.end_byte].split("\n")[0]
         if len(text) > 24:
             text = text[:23] + "…"
         return f"Var: {text}"
 
-    # Call expressions
     if node.type == "call_expression":
         func_node = node.child_by_field_name("function")
         if func_node:
@@ -186,19 +171,15 @@ def build_ts_label(node, source_code: str) -> str:
             return f"Call: {func_text}"
         return "Call"
 
-    # Arrow functions
     if node.type == "arrow_function":
         return "ArrowFunction"
 
-    # If statements
     if node.type == "if_statement":
         return "IfStatement"
 
-    # Loops
     if node.type in ("for_statement", "for_in_statement", "for_of_statement", "while_statement"):
         return f"Loop: {formatted}"
 
-    # JSX elements
     if node.type in ("jsx_element", "jsx_self_closing_element"):
         text = source_code[node.start_byte : node.end_byte].split("\n")[0]
         if len(text) > 24:
