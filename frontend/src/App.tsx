@@ -5,7 +5,6 @@ import { CodeEditor } from './components/CodeEditor';
 import { MetricsGrid } from './components/MetricsGrid';
 import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
-import { ProgressIndicator } from './components/ProgressIndicator';
 import { SaveTitleModal } from './components/SaveTitleModal';
 import { HomePage } from './components/HomePage';
 import { HistoryPage } from './components/HistoryPage';
@@ -252,13 +251,7 @@ export const App: React.FC = () => {
             detectedLanguage={detectedLanguage}
           />
 
-          <ProgressIndicator
-            stages={stages}
-            isAnalyzing={isAnalyzing}
-            isSocketConnected={isSocketConnected}
-          />
-
-          {/* Row 1: Split Desktop 50/50 Grid (Python/Code Editor & Analysis Results) */}
+          {/* Row 1: Split Desktop 50/50 Grid (Code Editor & Analysis Results) */}
           <div className={`editor-results-row ${isEditorCollapsed ? 'is-collapsed-row' : ''}`}>
             <CodeEditor
               value={code}
