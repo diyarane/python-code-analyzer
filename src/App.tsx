@@ -41,7 +41,23 @@ export const App: React.FC = () => {
     setFileStatus(filename);
   };
 
+  const handleClearCode = () => {
+    setCode('');
+    setFileStatus('Empty');
+    setAnalysisResponse(null);
+    setHighlightLine(null);
+    setAnalysisState('Ready');
+  };
+
+  const handleResetExample = () => {
+    setCode(DEFAULT_CODE);
+    setFileStatus('Mock sample loaded');
+    setHighlightLine(null);
+  };
+
   const runAnalyze = useCallback(async () => {
+    if (isAnalyzing) return;
+
     setIsAnalyzing(true);
     setAnalysisState('Analyzing…');
     setHighlightLine(null);
@@ -55,7 +71,10 @@ export const App: React.FC = () => {
     } else {
       setAnalysisState('Error');
     }
-  }, [code]);
+  }, [code, isAnalyzing]);
+
+  const errorLine = !analysisResponse?.success ? analysisResponse?.line ?? null : null;
+  const errorMessage = !analysisResponse?.success ? analysisResponse?.message ?? null : null;
 
   return (
     <div className="app-shell">
@@ -72,9 +91,15 @@ export const App: React.FC = () => {
         <CodeEditor
           value={code}
           onChange={setCode}
+          onAnalyze={runAnalyze}
+          onClear={handleClearCode}
+          onResetExample={handleResetExample}
           theme={theme}
           fileStatus={fileStatus}
           highlightLine={highlightLine}
+          errorLine={errorLine}
+          errorMessage={errorMessage}
+          isAnalyzing={isAnalyzing}
         />
 
         <section className="panel results-panel">
@@ -95,14 +120,14 @@ export const App: React.FC = () => {
           <MetricsGrid
             metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
             error={!analysisResponse?.success ? analysisResponse?.error : null}
-            errorMessage={!analysisResponse?.success ? analysisResponse?.message : null}
+            errorMessage={errorMessage}
           />
 
           <AstVisualizer
             astData={analysisResponse?.success ? analysisResponse.ast || null : null}
             nodeCount={analysisResponse?.node_count}
             warnings={analysisResponse?.warnings}
-            errorMessage={!analysisResponse?.success ? analysisResponse?.message : null}
+            errorMessage={errorMessage}
             onSelectNode={setHighlightLine}
           />
         </section>
@@ -112,7 +137,7 @@ export const App: React.FC = () => {
             analysisResponse?.success ? analysisResponse.explanations || null : null
           }
           error={!analysisResponse?.success ? analysisResponse?.error : null}
-          errorMessage={!analysisResponse?.success ? analysisResponse?.message : null}
+          errorMessage={errorMessage}
         />
       </main>
     </div>
