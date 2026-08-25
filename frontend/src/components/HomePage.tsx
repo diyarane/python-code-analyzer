@@ -156,6 +156,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
       .finally(() => setLoadingHistory(false));
   }, [user]);
 
+  // IntersectionObserver for subtle scroll-in reveal animations
+  useEffect(() => {
+    const elements = document.querySelectorAll('.reveal-on-scroll');
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [recentAnalyses, loadingHistory]);
+
   const scrollToCapabilities = () => {
     const el = document.getElementById('capabilities');
     if (el) {
@@ -169,16 +190,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
       <section className="home-hero-full">
         <HeroDotBackground />
         <div className="hero-content">
-          <p className="hero-eyebrow">CODE ANALYSIS PLATFORM</p>
-          <h1 className="hero-headline">
+          <p className="hero-eyebrow hero-animate-in hero-delay-1">CODE ANALYSIS PLATFORM</p>
+          <h1 className="hero-headline hero-animate-in hero-delay-2">
             Understand your <br />
             <span className="gradient-text">source code.</span>
           </h1>
-          <p className="hero-subhead">
+          <p className="hero-subhead hero-animate-in hero-delay-3">
             CodeAnalyzer AI parses Python, JavaScript, TypeScript, Java, C, C++, Go, and Rust source code, visualizes Abstract Syntax Trees, calculates complexity metrics, and provides actionable recommendations.
           </p>
 
-          <div className="hero-actions">
+          <div className="hero-actions hero-animate-in hero-delay-4">
             <button
               type="button"
               className="btn btn-primary hero-cta"
@@ -196,7 +217,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
           </div>
         </div>
 
-        <div className="scroll-indicator" onClick={scrollToCapabilities} role="button" tabIndex={0}>
+        <div className="scroll-indicator hero-animate-in hero-delay-5" onClick={scrollToCapabilities} role="button" tabIndex={0}>
           <span>Scroll to discover</span>
           <IconArrowDown size={16} />
         </div>
@@ -204,13 +225,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
 
       {/* Feature Capabilities Grid */}
       <section id="capabilities" className="home-section">
-        <div className="home-section-header">
+        <div className="home-section-header reveal-on-scroll">
           <p className="home-section-eyebrow">CORE CAPABILITIES</p>
           <h2 className="home-section-heading">Everything you need to inspect source code</h2>
         </div>
 
         <div className="features-grid">
-          <div className="feature-card">
+          <div className="feature-card reveal-on-scroll reveal-delay-1">
             <div className="feature-icon-wrapper">
               <IconAst size={24} />
             </div>
@@ -218,7 +239,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
             <p>Visual tree representations generated from native AST and Tree-sitter parsers with complexity weighting.</p>
           </div>
 
-          <div className="feature-card">
+          <div className="feature-card reveal-on-scroll reveal-delay-2">
             <div className="feature-icon-wrapper">
               <IconZap size={24} />
             </div>
@@ -226,7 +247,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
             <p>Estimated time and space complexity based on loop nesting, control flow, and recursion analysis.</p>
           </div>
 
-          <div className="feature-card">
+          <div className="feature-card reveal-on-scroll reveal-delay-3">
             <div className="feature-icon-wrapper">
               <IconSearch size={24} />
             </div>
@@ -234,7 +255,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
             <p>Identifies unused functions and unreachable code statements where supported by language adapters.</p>
           </div>
 
-          <div className="feature-card">
+          <div className="feature-card reveal-on-scroll reveal-delay-4">
             <div className="feature-icon-wrapper">
               <IconBot size={24} />
             </div>
@@ -246,23 +267,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
 
       {/* How It Works Section */}
       <section className="home-section">
-        <div className="home-section-header">
+        <div className="home-section-header reveal-on-scroll">
           <p className="home-section-eyebrow">WORKFLOW</p>
           <h2 className="home-section-heading">How CodeAnalyzer AI Works</h2>
         </div>
 
         <div className="how-it-works-grid">
-          <div className="step-card">
+          <div className="step-card reveal-on-scroll reveal-delay-1">
             <span className="step-num">01</span>
             <h3>Provide Code</h3>
             <p>Write, paste, or upload your source code directly into the editor.</p>
           </div>
-          <div className="step-card">
+          <div className="step-card reveal-on-scroll reveal-delay-2">
             <span className="step-num">02</span>
             <h3>Run Analysis</h3>
             <p>Click Analyze to trigger AST parsing, complexity scoring, and dead-code scanning.</p>
           </div>
-          <div className="step-card">
+          <div className="step-card reveal-on-scroll reveal-delay-3">
             <span className="step-num">03</span>
             <h3>Explore & Save</h3>
             <p>Inspect the interactive syntax tree, review AI explanations, and save results to your account.</p>
@@ -273,15 +294,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
       {/* Recent Analysis History (Authenticated User) */}
       {user && (
         <section className="home-section">
-          <div className="home-section-header">
+          <div className="home-section-header reveal-on-scroll">
             <p className="home-section-eyebrow">RECENT ACTIVITY</p>
             <h2 className="home-section-heading">Your Saved Analyses</h2>
           </div>
 
           {loadingHistory ? (
-            <div className="home-empty-card">Loading recent history...</div>
+            <div className="home-empty-card reveal-on-scroll">Loading recent history...</div>
           ) : recentAnalyses.length === 0 ? (
-            <div className="home-empty-card">
+            <div className="home-empty-card reveal-on-scroll">
               <p>No saved analyses found. Run an analysis and click "Save Explanation" to store results.</p>
               <button
                 type="button"
@@ -293,10 +314,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
             </div>
           ) : (
             <div className="recent-grid">
-              {recentAnalyses.map((item) => (
+              {recentAnalyses.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="recent-card"
+                  className={`recent-card reveal-on-scroll reveal-delay-${(idx % 3) + 1}`}
                   onClick={() => {
                     onLoadSnippet(item.source_code, item.analysis_result);
                     onNavigate('analyzer');
