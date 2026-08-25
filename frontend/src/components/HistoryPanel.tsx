@@ -115,7 +115,14 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                   >
                     <div className="history-card-header">
                       <span className="history-title">{item.title}</span>
-                      <span className="history-badge">{timeComp}</span>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {item.analysis_result?.language && (
+                          <span className="lang-status-badge is-manual" style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                            {item.analysis_result.language}
+                          </span>
+                        )}
+                        <span className="history-badge">{timeComp}</span>
+                      </div>
                     </div>
                     <div className="history-card-sub">
                       <span>{dateStr}</span>

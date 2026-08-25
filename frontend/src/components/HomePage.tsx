@@ -172,10 +172,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
           <p className="hero-eyebrow">CODE ANALYSIS PLATFORM</p>
           <h1 className="hero-headline">
             Understand your <br />
-            <span className="gradient-text">Python code.</span>
+            <span className="gradient-text">source code.</span>
           </h1>
           <p className="hero-subhead">
-            CodeAnalyzer AI parses Python source code, visualizes Abstract Syntax Trees, calculates execution metrics, detects dead code, and provides actionable recommendations.
+            CodeAnalyzer AI parses Python, JavaScript, TypeScript, Java, C, C++, Go, and Rust source code, visualizes Abstract Syntax Trees, calculates complexity metrics, and provides actionable recommendations.
           </p>
 
           <div className="hero-actions">
@@ -206,7 +206,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
       <section id="capabilities" className="home-section">
         <div className="home-section-header">
           <p className="home-section-eyebrow">CORE CAPABILITIES</p>
-          <h2 className="home-section-heading">Everything you need to inspect Python code</h2>
+          <h2 className="home-section-heading">Everything you need to inspect source code</h2>
         </div>
 
         <div className="features-grid">
@@ -215,7 +215,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
               <IconAst size={24} />
             </div>
             <h3>Interactive AST</h3>
-            <p>Visual tree representations generated from Python's standard `ast` module with complexity weighting.</p>
+            <p>Visual tree representations generated from native AST and Tree-sitter parsers with complexity weighting.</p>
           </div>
 
           <div className="feature-card">
@@ -223,7 +223,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
               <IconZap size={24} />
             </div>
             <h3>Complexity Metrics</h3>
-            <p>Estimated time and space complexity based on loop nesting and recursion analysis.</p>
+            <p>Estimated time and space complexity based on loop nesting, control flow, and recursion analysis.</p>
           </div>
 
           <div className="feature-card">
@@ -231,7 +231,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
               <IconSearch size={24} />
             </div>
             <h3>Dead Code Detection</h3>
-            <p>Identifies unused functions and unreachable code statements after return/raise statements.</p>
+            <p>Identifies unused functions and unreachable code statements where supported by language adapters.</p>
           </div>
 
           <div className="feature-card">
@@ -255,7 +255,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
           <div className="step-card">
             <span className="step-num">01</span>
             <h3>Provide Code</h3>
-            <p>Write, paste, or upload your Python source code directly into the editor.</p>
+            <p>Write, paste, or upload your source code directly into the editor.</p>
           </div>
           <div className="step-card">
             <span className="step-num">02</span>

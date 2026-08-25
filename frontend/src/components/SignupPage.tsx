@@ -71,7 +71,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
             </span>
           </a>
           <h2>Create your account</h2>
-          <p className="auth-card-sub">Start analyzing Python AST structure and complexity.</p>
+          <p className="auth-card-sub">Start analyzing code AST structure and complexity.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

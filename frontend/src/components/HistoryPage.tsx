@@ -128,6 +128,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             <thead>
               <tr>
                 <th>Name / Title</th>
+                <th>Language</th>
                 <th>Time Complexity</th>
                 <th>Space Complexity</th>
                 <th>Optimization</th>
@@ -156,6 +157,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                           {item.source_code.slice(0, 45)}...
                         </span>
                       </div>
+                    </td>
+                    <td>
+                      <span className="lang-status-badge is-manual" style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                        {item.analysis_result?.language || 'python'}
+                      </span>
                     </td>
                     <td>
                       <span className="history-badge">{timeComp}</span>

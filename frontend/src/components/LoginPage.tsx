@@ -66,7 +66,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             </span>
           </a>
           <h2>Sign in to CodeAnalyzer AI</h2>
-          <p className="auth-card-sub">Access your Python AST graph history and static metrics.</p>
+          <p className="auth-card-sub">Access your code AST graph history and static metrics.</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

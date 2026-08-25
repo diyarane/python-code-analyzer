@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             className={`nav-link ${currentRoute === 'analyzer' ? 'is-active' : ''}`}
             onClick={() => onNavigate('analyzer')}
-            aria-label="Go to Python Analyzer"
+            aria-label="Go to Code Analyzer"
           >
             <IconCode2 size={15} />
             <span>Analyzer</span>
