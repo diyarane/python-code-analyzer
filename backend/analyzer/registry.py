@@ -9,6 +9,11 @@ from .base import BaseLanguage
 from .languages.python.python_language import PythonLanguage
 from .languages.javascript import JavaScriptLanguage, JavaScriptJSXLanguage
 from .languages.typescript import TypeScriptLanguage, TypeScriptTSXLanguage
+from .languages.java import JavaLanguage
+from .languages.c import CLanguage
+from .languages.cpp import CPPLanguage
+from .languages.go import GoLanguage
+from .languages.rust import RustLanguage
 
 
 class LanguageRegistry:
@@ -24,6 +29,11 @@ class LanguageRegistry:
         self.register(JavaScriptJSXLanguage())
         self.register(TypeScriptLanguage())
         self.register(TypeScriptTSXLanguage())
+        self.register(JavaLanguage())
+        self.register(CLanguage())
+        self.register(CPPLanguage())
+        self.register(GoLanguage())
+        self.register(RustLanguage())
 
     def register(self, language: BaseLanguage):
         """Register a language instance."""

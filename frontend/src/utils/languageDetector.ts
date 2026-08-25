@@ -51,6 +51,41 @@ export const SUPPORTED_LANGUAGES: LanguageInfo[] = [
     supported: true,
     monacoLanguage: 'typescript',
   },
+  {
+    id: 'java',
+    displayName: 'Java',
+    extensions: ['.java'],
+    supported: true,
+    monacoLanguage: 'java',
+  },
+  {
+    id: 'c',
+    displayName: 'C',
+    extensions: ['.c', '.h'],
+    supported: true,
+    monacoLanguage: 'c',
+  },
+  {
+    id: 'cpp',
+    displayName: 'C++',
+    extensions: ['.cpp', '.hpp', '.cc', '.cxx', '.hh'],
+    supported: true,
+    monacoLanguage: 'cpp',
+  },
+  {
+    id: 'go',
+    displayName: 'Go',
+    extensions: ['.go'],
+    supported: true,
+    monacoLanguage: 'go',
+  },
+  {
+    id: 'rust',
+    displayName: 'Rust',
+    extensions: ['.rs'],
+    supported: true,
+    monacoLanguage: 'rust',
+  },
 ];
 
 export const detectFrontendLanguage = (
@@ -91,6 +126,31 @@ export const detectFrontendLanguage = (
 
   // 3. Content heuristics
   if (code && code.trim()) {
+    if (code.includes('package main') || code.includes('func main()')) {
+      const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'go')!;
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.90 };
+    }
+
+    if (code.includes('fn main()') || code.includes('let mut ') || code.includes('println!(')) {
+      const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'rust')!;
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.90 };
+    }
+
+    if (code.includes('public class ') || code.includes('System.out.print')) {
+      const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'java')!;
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.90 };
+    }
+
+    if (code.includes('#include <iostream>') || code.includes('std::cout')) {
+      const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'cpp')!;
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.90 };
+    }
+
+    if (code.includes('#include <stdio.h>') || code.includes('printf(')) {
+      const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'c')!;
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.85 };
+    }
+
     const pythonKeywords = ['def ', 'import ', 'from ', 'class ', 'elif ', 'self.', 'print('];
     const pyMatches = pythonKeywords.filter((kw) => code.includes(kw)).length;
 
@@ -102,38 +162,17 @@ export const detectFrontendLanguage = (
 
     if (tsMatches >= 1 && jsMatches >= 1) {
       const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'typescript')!;
-      return {
-        language: matched.id,
-        displayName: matched.displayName,
-        source: 'content',
-        confidence: 0.85,
-        supported: matched.supported,
-        monacoLanguage: matched.monacoLanguage,
-      };
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.85 };
     }
 
     if (jsMatches >= 2) {
       const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'javascript')!;
-      return {
-        language: matched.id,
-        displayName: matched.displayName,
-        source: 'content',
-        confidence: 0.80,
-        supported: matched.supported,
-        monacoLanguage: matched.monacoLanguage,
-      };
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.80 };
     }
 
     if (pyMatches >= 1) {
       const matched = SUPPORTED_LANGUAGES.find((l) => l.id === 'python')!;
-      return {
-        language: matched.id,
-        displayName: matched.displayName,
-        source: 'content',
-        confidence: 0.90,
-        supported: matched.supported,
-        monacoLanguage: matched.monacoLanguage,
-      };
+      return { ...matched, language: matched.id, source: 'content', confidence: 0.90 };
     }
   }
 
