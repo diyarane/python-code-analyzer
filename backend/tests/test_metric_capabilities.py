@@ -26,6 +26,9 @@ class TestMetricCapabilities(unittest.TestCase):
             ("typescript_tsx", "export const App: React.FC = () => <div>Hello</div>;"),
             ("c", "int add(int a, int b) { return a + b; }"),
             ("cpp", "int add(int a, int b) { return a + b; }"),
+            ("java", "public class Main { public static void main(String[] a) {} }"),
+            ("go", "package main\nfunc main() {}"),
+            ("rust", "fn main() {}"),
         ]
         for lang, code in supported_cases:
             res = analyze_code(code, language=lang)
@@ -37,11 +40,7 @@ class TestMetricCapabilities(unittest.TestCase):
             self.assertIsNotNone(metrics.get("dead_code_count"), f"Expected non-None dead_code_count for {lang}")
 
     def test_unsupported_languages_dead_code_status_and_reason(self):
-        unsupported_cases = [
-            ("java", "public class Main { public static void main(String[] a) {} }"),
-            ("go", "package main\nfunc main() {}"),
-            ("rust", "fn main() {}"),
-        ]
+        unsupported_cases = []
 
         for lang, code in unsupported_cases:
             res = analyze_code(code, language=lang)

@@ -24,7 +24,7 @@ public class Calculator {
         self.assertEqual(res.get("language"), "java")
         self.assertIsNotNone(res.get("ast"))
         self.assertEqual(res.get("metrics", {}).get("time_complexity"), "O(n)")
-        self.assertIsNone(res.get("metrics", {}).get("dead_code_count"))
+        self.assertEqual(res.get("metrics", {}).get("dead_code_count"), 0)
 
         invalid_java = "public class Calc { public int sum( {"
         res_bad = analyze_code(invalid_java, language="java")

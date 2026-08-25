@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
 from ...explanation_builder import generate_language_aware_explanations
-from ...dead_code import UnsupportedDeadCodeAnalyzer
+from .go_dead_code import GoDeadCodeAnalyzer
 
 
 class GoAnalyzer(BaseAnalyzer):
@@ -31,7 +31,7 @@ class GoAnalyzer(BaseAnalyzer):
         node_count = self._count_nodes(root_node)
         _notify("ast_completed", {"node_count": node_count})
 
-        metrics = self._compute_metrics(root_node)
+        metrics = self._compute_metrics(root_node, tree, source_code)
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
             "space_complexity": metrics["space_complexity"]
@@ -60,10 +60,10 @@ class GoAnalyzer(BaseAnalyzer):
             count += self._count_nodes(child)
         return count
 
-    def _compute_metrics(self, root_node) -> Dict[str, Any]:
+    def _compute_metrics(self, root_node, tree: NormalizedSyntaxTree, source_code: str) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
-        dead_res = UnsupportedDeadCodeAnalyzer("Go").analyze(root_node, "")
+        dead_res = GoDeadCodeAnalyzer().analyze(tree, source_code)
 
         return engine.compute_control_flow_metrics(
             max_loop_depth=max_loop_depth,

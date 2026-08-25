@@ -27,11 +27,8 @@ class TestMultiLanguageFlow(unittest.TestCase):
             self.assertIn("time_complexity", res.get("metrics", {}))
             self.assertIn("summary", res.get("explanations", {}))
 
-            # Verify dead_code metric contract
-            if expected_lang in ("python", "javascript", "typescript", "javascript_jsx", "typescript_tsx", "c", "cpp"):
-                self.assertIsNotNone(res["metrics"].get("dead_code_count"))
-            else:
-                self.assertIsNone(res["metrics"].get("dead_code_count"))
+            # Verify dead_code metric contract across all supported languages
+            self.assertIsNotNone(res["metrics"].get("dead_code_count"))
 
 
 if __name__ == "__main__":
