@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { AnalyzerToolbar } from './components/AnalyzerToolbar';
 import { CodeEditor } from './components/CodeEditor';
@@ -10,7 +10,6 @@ import { HomePage } from './components/HomePage';
 import { HistoryPage } from './components/HistoryPage';
 import { LoginPage } from './components/LoginPage';
 import { SignupPage } from './components/SignupPage';
-import { useAnalysisSocket } from './hooks/useAnalysisSocket';
 import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
@@ -24,7 +23,8 @@ def find_duplicates(arr):
         for j in range(i+1, len(arr)):
             if arr[i] == arr[j] and arr[i] not in duplicates:
                 duplicates.append(arr[i])
-    return duplicates`;
+    return duplicates
+    unused_cleanup = True`;
 
 export const App: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -55,21 +55,34 @@ export const App: React.FC = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
+  // Request Cancellation & Invalidation Tokens
+  const analysisRequestId = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const isAnalyzing = isAnalyzingLocal || isSocketAnalyzing;
+  const isAnalyzing = isAnalyzingLocal;
+
+  const cancelCurrentAnalysis = useCallback(() => {
+    analysisRequestId.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsAnalyzingLocal(false);
+    setAnalysisState('Ready');
+  }, []);
 
   // Compute live detection result
   const detectedLanguage = detectFrontendLanguage(code, uploadedFilename, selectedLanguageMode);
 
   // Synchronize pristine mock sample and invalidate previous analysis results when language selection changes
   useEffect(() => {
+    cancelCurrentAnalysis();
     const activeLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
-    if (isPristine) {
-      const mockCode = getMockSample(activeLang);
-      setCode(mockCode);
-      setFileStatus('Mock sample loaded');
-    }
+    const mockCode = getMockSample(activeLang);
+    setCode(mockCode);
+    setFileStatus('Mock sample loaded');
+    setUploadedFilename(undefined);
+    setIsPristine(true);
     setAnalysisResponse(null);
     setHighlightLine(null);
     setAnalysisState('Ready');
@@ -117,6 +130,7 @@ export const App: React.FC = () => {
   };
 
   const handleFileUpload = (newCode: string, filename: string) => {
+    cancelCurrentAnalysis();
     setCode(newCode);
     setFileStatus(filename);
     setUploadedFilename(filename);
@@ -128,6 +142,7 @@ export const App: React.FC = () => {
   };
 
   const handleClearCode = () => {
+    cancelCurrentAnalysis();
     setCode('');
     setFileStatus('Empty');
     setUploadedFilename(undefined);
@@ -139,6 +154,7 @@ export const App: React.FC = () => {
   };
 
   const handleResetExample = () => {
+    cancelCurrentAnalysis();
     const activeLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
     const mockCode = getMockSample(activeLang);
     setCode(mockCode);
@@ -152,6 +168,7 @@ export const App: React.FC = () => {
   };
 
   const handleLoadSnippet = (snippetCode: string, result: AnalyzeResponse) => {
+    cancelCurrentAnalysis();
     setCode(snippetCode);
     setAnalysisResponse(result);
     setFileStatus('Loaded from history');
@@ -160,44 +177,50 @@ export const App: React.FC = () => {
   };
 
   const runAnalyze = useCallback(() => {
-    if (isAnalyzing) return;
     if (!detectedLanguage.supported) return;
+
+    cancelCurrentAnalysis();
+    analysisRequestId.current += 1;
+    const currentReqId = analysisRequestId.current;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     setAnalysisState('Analyzing…');
     setHighlightLine(null);
     setIsSaved(false);
-
-    const handleSuccess = (res: AnalyzeResponse) => {
-      setAnalysisResponse(res);
-      setIsAnalyzingLocal(false);
-      if (res.success) {
-        setAnalysisState('Ready');
-      } else {
-        setAnalysisState('Error');
-      }
-    };
-
-    const handleError = (err: { message: string; line?: number | null }) => {
-      setAnalysisResponse({
-        success: false,
-        error: 'AnalysisError',
-        message: err.message,
-        line: err.line,
-      });
-      setIsAnalyzingLocal(false);
-      setAnalysisState('Error');
-    };
+    setIsAnalyzingLocal(true);
 
     const targetLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
 
-    const handleHttpFallback = async () => {
-      setIsAnalyzingLocal(true);
-      const res = await analyzerApi.analyze(code, targetLang, uploadedFilename);
-      handleSuccess(res);
+    const executeAnalysis = async () => {
+      try {
+        const res = await analyzerApi.analyze(code, targetLang, uploadedFilename, controller.signal);
+        if (currentReqId !== analysisRequestId.current) return;
+        setAnalysisResponse(res);
+        if (res.success) {
+          setAnalysisState('Ready');
+        } else {
+          setAnalysisState('Error');
+        }
+      } catch (err: any) {
+        if (currentReqId !== analysisRequestId.current) return;
+        if (err && err.name === 'AbortError') return;
+        setAnalysisResponse({
+          success: false,
+          error: 'AnalysisError',
+          message: err && err.message ? err.message : 'Analysis failed',
+          line: err && err.line ? err.line : null,
+        });
+        setAnalysisState('Error');
+      } finally {
+        if (currentReqId === analysisRequestId.current) {
+          setIsAnalyzingLocal(false);
+        }
+      }
     };
 
-    analyzeSocket(code, targetLang, uploadedFilename, handleSuccess, handleError, handleHttpFallback);
-  }, [code, isAnalyzing, analyzeSocket, detectedLanguage, selectedLanguageMode, uploadedFilename]);
+    executeAnalysis();
+  }, [code, cancelCurrentAnalysis, detectedLanguage, selectedLanguageMode, uploadedFilename]);
 
   const handleInitiateSave = () => {
     if (!user) {

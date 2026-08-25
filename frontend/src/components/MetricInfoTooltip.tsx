@@ -16,14 +16,17 @@ export const MetricInfoTooltip: React.FC<MetricInfoTooltipProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="info-popover-wrapper" style={{ display: 'inline-flex', alignItems: 'center' }}>
+    <div
+      className="info-popover-wrapper"
+      style={{ display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
       <button
         type="button"
-        className="unboxed-info-btn"
+        className="info-trigger-btn"
         aria-label={`${capability.title} information`}
         onClick={() => setIsOpen((prev) => !prev)}
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
       >
         <IconInfo size={iconSize} />
       </button>

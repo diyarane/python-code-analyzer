@@ -798,6 +798,7 @@ body {
 
 .info-popover-wrapper {
   position: relative;
+  z-index: 50;
 }
 
 .info-trigger-btn {
@@ -832,7 +833,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px;
-  z-index: 100;
+  z-index: 1000;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;

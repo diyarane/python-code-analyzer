@@ -1,5 +1,6 @@
 /**
  * Mock sample source code definitions for all supported languages in CodeAnalyzer AI.
+ * Every sample is valid syntax for its language and includes an intentional dead-code pattern.
  */
 
 export const MOCK_SAMPLES: Record<string, string> = {
@@ -11,6 +12,7 @@ def find_duplicates(arr):
             if arr[i] == arr[j] and arr[i] not in duplicates:
                 duplicates.append(arr[i])
     return duplicates
+    unused_cleanup = True
 `,
   javascript: `// Mock sample loaded
 function findDuplicates(arr) {
@@ -23,6 +25,7 @@ function findDuplicates(arr) {
         }
     }
     return duplicates;
+    const unusedCleanup = true;
 }
 `,
   javascript_jsx: `// Mock sample loaded
@@ -41,6 +44,8 @@ export function DuplicateFinder({ items }) {
             }
         }
         setDuplicates(result);
+        return;
+        const unreachableNotice = "JSX render complete";
     };
 
     return (
@@ -66,6 +71,7 @@ function findDuplicates(arr: number[]): number[] {
         }
     }
     return duplicates;
+    const unusedCleanup: boolean = true;
 }
 `,
   typescript_tsx: `// Mock sample loaded
@@ -88,6 +94,8 @@ export const DuplicateFinder: React.FC<Props> = ({ items }) => {
             }
         }
         setDuplicates(result);
+        return;
+        const unreachableNotice: string = "TSX render complete";
     };
 
     return (
@@ -116,6 +124,7 @@ public class DuplicateFinder {
             }
         }
         return result;
+        int unusedCleanup = 0;
     }
 }
 `,
@@ -133,6 +142,7 @@ int findDuplicates(int arr[], int size) {
         }
     }
     return count;
+    int unused_cleanup = 0;
 }
 `,
   cpp: `// Mock sample loaded
@@ -150,6 +160,7 @@ std::vector<int> findDuplicates(const std::vector<int>& arr) {
         }
     }
     return duplicates;
+    int unused_cleanup = 0;
 }
 `,
   go: `// Mock sample loaded
@@ -161,11 +172,12 @@ func findDuplicates(arr []int) []int {
         for j := i + 1; j < len(arr); j++ {
             if arr[i] == arr[j] {
                 duplicates = append(duplicates, arr[i])
-                break;
+                break
             }
         }
     }
-    return duplicates;
+    return duplicates
+    _ = 0
 }
 `,
   rust: `// Mock sample loaded
@@ -179,7 +191,8 @@ fn find_duplicates(arr: &[i32]) -> Vec<i32> {
             }
         }
     }
-    duplicates
+    return duplicates;
+    let _unused_cleanup = 0;
 }
 `,
 };

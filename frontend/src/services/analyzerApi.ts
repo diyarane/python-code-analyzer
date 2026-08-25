@@ -3,8 +3,14 @@ import { AnalyzeResponse } from '../types/analyzer';
 export const analyzerApi = {
   /**
    * POST /analyze — returns AST JSON, metrics, explanations, and detection metadata.
+   * Accepts an optional AbortSignal for canceling in-flight HTTP requests.
    */
-  async analyze(code: string, language?: string, filename?: string): Promise<AnalyzeResponse> {
+  async analyze(
+    code: string,
+    language?: string,
+    filename?: string,
+    signal?: AbortSignal
+  ): Promise<AnalyzeResponse> {
     let response: Response;
     try {
       response = await fetch('/analyze', {
@@ -13,8 +19,12 @@ export const analyzerApi = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ code, language, filename }),
+        signal,
       });
     } catch (err: any) {
+      if (err && err.name === 'AbortError') {
+        throw err;
+      }
       return {
         success: false,
         error: 'NetworkError',
