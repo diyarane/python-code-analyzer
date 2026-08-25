@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AnalyzeResponse } from '../types/analyzer';
-import { IconAst, IconZap, IconSearch, IconBot, IconHistory } from './Icons';
+import { IconAst, IconZap, IconSearch, IconBot } from './Icons';
 
 export interface HistoryRecord {
   id: number;
@@ -43,12 +43,12 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="home-container">
-      {/* Restrained Technical Hero Section */}
+      {/* Premium Hero Section */}
       <section className="hero-section">
-        <div className="hero-badge">Static Intelligence Platform</div>
-        <h1 className="hero-title">CodeAnalyzer AI</h1>
+        <div className="hero-badge">CODE ANALYSIS PLATFORM</div>
+        <h1 className="hero-title">Understand your Python code.</h1>
         <p className="hero-subhead">
-          Analyze, understand, and improve your Python code through interactive AST syntax trees, complexity metrics, and static inspections.
+          Analyze structure, complexity, dead code, and optimization opportunities from a single workspace.
         </p>
         <div className="hero-actions">
           <button
@@ -58,15 +58,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           >
             Start Analyzing
           </button>
-          {!user && (
-            <button
-              type="button"
-              className="btn btn-secondary hero-secondary-cta"
-              onClick={() => onNavigate('signup')}
-            >
-              Create Account
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-secondary hero-secondary-cta"
+            onClick={() => onNavigate(user ? 'history' : 'signup')}
+          >
+            {user ? 'View History' : 'Create Account'}
+          </button>
         </div>
       </section>
 
@@ -83,7 +81,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <h3>AST Visualization</h3>
             <p>
-              Explore the structure of your Python code through an interactive syntax tree powered by React Flow node mapping.
+              Explore the structure of your Python code through an interactive syntax tree powered by React Flow.
             </p>
           </div>
 
@@ -93,7 +91,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <h3>Complexity Analysis</h3>
             <p>
-              Understand time and space complexity calculated directly from control flow, loop depth, and recursion heuristics.
+              Understand time and space complexity calculated directly from control flow and loop structures.
             </p>
           </div>
 
@@ -103,7 +101,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <h3>Dead Code Detection</h3>
             <p>
-              Identify unreachable branches, unreferenced variables, unimported aliases, and unused function definitions.
+              Identify unreachable branches, unreferenced variables, unimported aliases, and unused definitions.
             </p>
           </div>
 
@@ -113,7 +111,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <h3>AI Recommendations</h3>
             <p>
-              Get concise explanations, optimization scores, and actionable refactoring suggestions to enhance code efficiency.
+              Get concise explanations, optimization scores, and actionable refactoring suggestions.
             </p>
           </div>
         </div>
@@ -134,13 +132,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           <div className="step-card">
             <span className="step-num">02</span>
-            <h4>Run AST Analysis</h4>
+            <h4>Analyze</h4>
             <p>Static AST parser analyzes syntax tree, control flow, and complexity.</p>
           </div>
 
           <div className="step-card">
             <span className="step-num">03</span>
-            <h4>Inspect Compiler View</h4>
+            <h4>Explore AST</h4>
             <p>Explore interactive React Flow syntax graph and line maps.</p>
           </div>
 
