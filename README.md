@@ -4,11 +4,38 @@ Static intelligence platform providing AST graph visualization, time/space compl
 
 ---
 
-## Technical Stack
+## Repository Structure
 
-- **Frontend**: React 18, TypeScript 5, Vite, Monaco Editor (`@monaco-editor/react`), React Flow (`reactflow`), Dagre graph layout (`dagre`).
-- **Backend**: Python 3.11, Flask, Gunicorn.
-- **Containerization**: Multi-stage Docker, Docker Compose.
+```
+codeanalyzer/
+├── backend/
+│   ├── app.py                  # Active Flask application entry point
+│   ├── analyzer/               # Python AST analyzer & Redis cache
+│   │   ├── __init__.py
+│   │   ├── ast_parser.py
+│   │   ├── cache.py
+│   │   ├── complexity.py
+│   │   └── utils.py
+│   └── tests/                  # Backend test suite & samples
+│       ├── comprehensive_test.py
+│       ├── sample.py
+│       └── test.py
+│
+├── frontend/
+│   ├── src/                    # React 18 + TypeScript 5 SPA
+│   ├── index.html
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+│
+├── Dockerfile                  # Multi-stage build (Node.js -> Python runtime)
+├── docker-compose.yml          # Container orchestration (Flask + Redis)
+├── .dockerignore
+├── .gitignore
+├── .env.example
+├── README.md
+└── requirements.txt
+```
 
 ---
 
@@ -30,16 +57,18 @@ cp .env.example .env
 pip install -r requirements.txt
 
 # Run Flask backend server
-python app.py
+python backend/app.py
 ```
 The Flask backend will start on `http://127.0.0.1:5000`.
 
-#### Frontend Development Server (Optional)
+#### Frontend Setup
 ```bash
+cd frontend
+
 # Install npm dependencies
 npm install
 
-# Build production bundle (or start Vite dev server)
+# Build production SPA bundle
 npm run build
 
 # Start Vite dev server with proxy to Flask
@@ -52,14 +81,12 @@ npm run dev
 
 ### Build and Start Containers
 
-To build and run the entire application inside Docker:
-
 ```bash
 docker compose up -d --build
 ```
 
 Access the application in your browser at:
-`http://localhost:5000`
+`http://localhost:5001`
 
 ### View Container Logs
 
@@ -82,3 +109,6 @@ docker compose down
 | `PORT` | Container web server port | `5000` |
 | `FLASK_ENV` | Environment mode (`development` / `production`) | `production` |
 | `SECRET_KEY` | Flask session secret key | `change-this-in-production-secret-key` |
+| `REDIS_HOST` | Redis cache hostname | `localhost` |
+| `REDIS_PORT` | Redis cache port | `6379` |
+| `REDIS_TTL` | Cache time-to-live (seconds) | `3600` |

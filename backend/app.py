@@ -1,10 +1,14 @@
 import os
+import sys
 from flask import Flask, jsonify, render_template, request, send_from_directory
+
+# Ensure backend directory is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analyzer.ast_parser import analyze_code
 from analyzer.cache import get_cached_analysis, set_cached_analysis
 
-DIST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
+DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist"))
 
 if os.path.exists(DIST_DIR):
     app = Flask(__name__, static_folder=os.path.join(DIST_DIR, "assets"), static_url_path="/assets")
@@ -16,7 +20,7 @@ else:
 def index():
     if os.path.exists(os.path.join(DIST_DIR, "index.html")):
         return send_from_directory(DIST_DIR, "index.html")
-    return render_template("index.html")
+    return "CodeAnalyzer AI Backend API is running."
 
 
 def _run_analyze():
