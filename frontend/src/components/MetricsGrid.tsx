@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ComplexityMetrics } from '../types/analyzer';
-import { IconInfo } from './Icons';
+import { MetricInfoTooltip } from './MetricInfoTooltip';
+import { getMetricExplanation } from '../utils/metricCapabilities';
 
 interface MetricsGridProps {
   metrics: ComplexityMetrics | null;
   error?: string | null;
   errorMessage?: string | null;
+  languageDisplayName?: string;
 }
 
-export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorMessage }) => {
-  const [activeInfo, setActiveInfo] = useState<string | null>(null);
-
+export const MetricsGrid: React.FC<MetricsGridProps> = ({
+  metrics,
+  error,
+  errorMessage,
+  languageDisplayName = 'Code',
+}) => {
   const getStatusBadge = (metricKey: string, defaultStatus: string = 'estimated') => {
     const detail = metrics?.metric_status?.[metricKey];
     const status = detail?.status || defaultStatus;
@@ -30,14 +35,17 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
   const getDeadCodeCopy = () => {
     const detail = metrics?.metric_status?.['dead_code_count'];
     if (detail?.status === 'unsupported' || metrics?.dead_code_count === null) {
-      return detail?.reason || 'Dead-code control flow analysis is unsupported for this language.';
+      return detail?.reason || `Dead-code analysis is not currently implemented for ${languageDisplayName}.`;
     }
     return 'Unreachable statements and unreferenced definitions.';
   };
 
-  const toggleInfo = (key: string) => {
-    setActiveInfo((prev) => (prev === key ? null : key));
-  };
+  const isDeadCodeSupported = metrics?.metric_status?.['dead_code_count']?.status !== 'unsupported' && metrics?.dead_code_count !== null;
+
+  const timeCap = getMetricExplanation('time_complexity', languageDisplayName);
+  const spaceCap = getMetricExplanation('space_complexity', languageDisplayName);
+  const deadCodeCap = getMetricExplanation('dead_code_count', languageDisplayName, isDeadCodeSupported, metrics?.dead_code_count ?? null);
+  const optCap = getMetricExplanation('optimization_score', languageDisplayName);
 
   return (
     <section className="workspace-section panel results-section">
@@ -64,34 +72,12 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
           </article>
         ) : (
           <div className="metrics-grid">
-            {/* Time Complexity Card */}
+            {/* Time Complexity Card (Left Col) */}
             <article className="metric-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="metric-label">Time Complexity</span>
-                  <div className="info-popover-wrapper">
-                    <button
-                      type="button"
-                      className="unboxed-info-btn"
-                      aria-label="Time Complexity info"
-                      title="Time Complexity info"
-                      onClick={() => toggleInfo('time')}
-                      onMouseEnter={() => setActiveInfo('time')}
-                      onMouseLeave={() => setActiveInfo(null)}
-                    >
-                      <IconInfo size={14} />
-                    </button>
-                    {activeInfo === 'time' && (
-                      <div className="info-popover-card" style={{ width: '240px' }}>
-                        <div className="popover-section">
-                          <h4>Time Complexity</h4>
-                          <p>
-                            Estimated from loop nesting and control-flow structure. This is a static heuristic estimate and does not represent runtime profiling.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MetricInfoTooltip capability={timeCap} align="left" />
                 </div>
                 {getStatusBadge('time_complexity', 'estimated')}
               </div>
@@ -101,34 +87,12 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
               </p>
             </article>
 
-            {/* Space Complexity Card */}
+            {/* Space Complexity Card (Right Col) */}
             <article className="metric-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="metric-label">Space Complexity</span>
-                  <div className="info-popover-wrapper">
-                    <button
-                      type="button"
-                      className="unboxed-info-btn"
-                      aria-label="Space Complexity info"
-                      title="Space Complexity info"
-                      onClick={() => toggleInfo('space')}
-                      onMouseEnter={() => setActiveInfo('space')}
-                      onMouseLeave={() => setActiveInfo(null)}
-                    >
-                      <IconInfo size={14} />
-                    </button>
-                    {activeInfo === 'space' && (
-                      <div className="info-popover-card" style={{ width: '240px' }}>
-                        <div className="popover-section">
-                          <h4>Space Complexity</h4>
-                          <p>
-                            Estimated from memory-allocation patterns, data structures, and recursion/stack behavior.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MetricInfoTooltip capability={spaceCap} align="right" />
                 </div>
                 {getStatusBadge('space_complexity', 'estimated')}
               </div>
@@ -138,36 +102,12 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
               </p>
             </article>
 
-            {/* Dead Code Card */}
+            {/* Dead Code Card (Left Col) */}
             <article className="metric-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="metric-label">Dead Code</span>
-                  <div className="info-popover-wrapper">
-                    <button
-                      type="button"
-                      className="unboxed-info-btn"
-                      aria-label="Dead Code info"
-                      title="Dead Code info"
-                      onClick={() => toggleInfo('dead_code')}
-                      onMouseEnter={() => setActiveInfo('dead_code')}
-                      onMouseLeave={() => setActiveInfo(null)}
-                    >
-                      <IconInfo size={14} />
-                    </button>
-                    {activeInfo === 'dead_code' && (
-                      <div className="info-popover-card" style={{ width: '250px' }}>
-                        <div className="popover-section">
-                          <h4>Dead Code Analysis</h4>
-                          <p>
-                            {metrics.dead_code_count !== null
-                              ? 'Identifies unreachable statements and unreferenced function definitions in the source AST.'
-                              : 'Dead-code control flow analysis is currently unavailable for this language adapter.'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MetricInfoTooltip capability={deadCodeCap} align="left" />
                 </div>
                 {getStatusBadge('dead_code_count', metrics.dead_code_count !== null ? 'available' : 'unsupported')}
               </div>
@@ -179,34 +119,12 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
               <p className="metric-copy">{getDeadCodeCopy()}</p>
             </article>
 
-            {/* Optimization Score Card */}
+            {/* Optimization Score Card (Right Col) */}
             <article className="metric-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="metric-label">Optimization Score</span>
-                  <div className="info-popover-wrapper">
-                    <button
-                      type="button"
-                      className="unboxed-info-btn"
-                      aria-label="Optimization Score info"
-                      title="Optimization Score info"
-                      onClick={() => toggleInfo('optimization')}
-                      onMouseEnter={() => setActiveInfo('optimization')}
-                      onMouseLeave={() => setActiveInfo(null)}
-                    >
-                      <IconInfo size={14} />
-                    </button>
-                    {activeInfo === 'optimization' && (
-                      <div className="info-popover-card" style={{ width: '240px' }}>
-                        <div className="popover-section">
-                          <h4>Optimization Score</h4>
-                          <p>
-                            An estimated score based on the analyzer's current control-flow and nesting efficiency heuristics.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <MetricInfoTooltip capability={optCap} align="right" />
                 </div>
                 {getStatusBadge('optimization_score', 'estimated')}
               </div>

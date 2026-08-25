@@ -301,6 +301,7 @@ export const App: React.FC = () => {
               metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
               error={!analysisResponse?.success ? analysisResponse?.error : null}
               errorMessage={errorMessage}
+              languageDisplayName={detectedLanguage.displayName}
             />
           </div>
 

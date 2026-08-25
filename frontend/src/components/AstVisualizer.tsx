@@ -12,6 +12,8 @@ import 'reactflow/dist/style.css';
 
 import { ASTNode } from '../types/analyzer';
 import { convertAstToReactFlow } from '../utils/astToReactFlow';
+import { getMetricExplanation } from '../utils/metricCapabilities';
+import { MetricInfoTooltip } from './MetricInfoTooltip';
 import { AstNodeCustom } from './AstNodeCustom';
 import {
   IconInfo,
@@ -165,30 +167,11 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
           <p className="eyebrow">Compiler View</p>
           <div className="ast-title-with-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h2>Interactive AST</h2>
-            <div className="info-popover-wrapper">
-              <button
-                type="button"
-                className="unboxed-info-btn"
-                aria-label="AST information"
-                title="AST information"
-                onClick={() => setShowInfoPopover((prev) => !prev)}
-                onMouseEnter={() => setShowInfoPopover(true)}
-                onMouseLeave={() => setShowInfoPopover(false)}
-              >
-                <IconInfo size={16} />
-              </button>
-
-              {showInfoPopover && (
-                <div className="info-popover-card" style={{ width: '280px' }}>
-                  <div className="popover-section">
-                    <h4>What is an AST?</h4>
-                    <p>
-                      An Abstract Syntax Tree (AST) represents the structure of your {languageDisplayName} code as connected nodes. It helps the analyzer inspect functions, loops, conditions, expressions, and other code constructs.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <MetricInfoTooltip
+              capability={getMetricExplanation('ast_visualization', languageDisplayName)}
+              align="left"
+              iconSize={16}
+            />
           </div>
           <p className="section-subtitle">
             Explore the structure of the analyzed {languageDisplayName} code.
