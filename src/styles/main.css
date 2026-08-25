@@ -787,6 +787,41 @@ h2 {
   width: 8px !important;
 }
 
+/* React Flow Custom Nodes & Canvas */
+.ast-node-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 172px;
+  height: 58px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.ast-node-handle {
+  width: 6px !important;
+  height: 6px !important;
+  background: var(--primary-strong) !important;
+  border: none !important;
+  opacity: 0.6;
+}
+
+.react-flow__node {
+  border-radius: 10px;
+}
+
+.react-flow__node.selected .ast-node-card,
+.ast-node.is-active .ast-node-card {
+  border-color: var(--border-strong);
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.3),
+    0 0 14px var(--glow);
+}
+
 @media (max-width: 1180px) and (min-width: 768px) {
   .dashboard {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
