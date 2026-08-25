@@ -24,7 +24,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onClear,
   onResetExample,
   theme,
-  fileStatus,
   highlightLine,
   errorLine,
   errorMessage,
@@ -168,17 +167,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             </>
           )}
 
-          <span className="status-pill">
-            {isCollapsed ? `${lineCount} lines` : fileStatus}
-          </span>
-
           <button
             type="button"
             className="btn btn-secondary nav-btn-sm collapse-btn"
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
           >
-            {isCollapsed ? 'Expand ↓' : 'Collapse ↑'}
+            {isCollapsed ? `Expand (${lineCount} lines) ↓` : 'Collapse ↑'}
           </button>
         </div>
       </div>

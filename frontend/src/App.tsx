@@ -16,7 +16,8 @@ import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
 
-const DEFAULT_CODE = `def find_duplicates(arr):
+const DEFAULT_CODE = `# Mock sample loaded
+def find_duplicates(arr):
     duplicates = []
     for i in range(len(arr)):
         for j in range(i+1, len(arr)):
@@ -240,7 +241,7 @@ export const App: React.FC = () => {
             isSocketConnected={isSocketConnected}
           />
 
-          {/* Row 1: Python Editor (50%) | Analysis Results (50%) */}
+          {/* Row 1: Python Editor (50%) | Analysis Results (50%) Equal Height Grid */}
           <div className={`editor-results-row ${isEditorCollapsed ? 'is-collapsed-row' : ''}`}>
             <CodeEditor
               value={code}

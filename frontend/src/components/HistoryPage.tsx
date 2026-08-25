@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AnalyzeResponse } from '../types/analyzer';
-import { HistoryRecord } from './HomePage';
 import { IconSearch, IconTrash, IconCode } from './Icons';
+
+export interface HistoryRecord {
+  id: number;
+  title: string;
+  source_code: string;
+  analysis_result: AnalyzeResponse;
+  created_at: string;
+}
 
 interface HistoryPageProps {
   onNavigate: (route: string) => void;
