@@ -5,7 +5,8 @@ from models import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-EMAIL_REGEX = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
+# RFC-compliant email regex format validation
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def get_current_user() -> User | None:
@@ -16,14 +17,45 @@ def get_current_user() -> User | None:
     return User.query.get(user_id)
 
 
+# ==============================================================================
+# Architectural Placeholders for Future Email Delivery Provider Integration
+# (Will be connected to SendGrid / AWS SES / Postmark for email verification & reset)
+# ==============================================================================
+
+def send_verification_email(user_email: str) -> bool:
+    """
+    Architectural placeholder for sending email verification codes/links.
+    Note: Format validation is enforced during signup, but email ownership
+    verification will be triggered via this placeholder when an email service is configured.
+    """
+    print(f"[EmailService Stub] Verification email queued for: {user_email}")
+    return True
+
+
+def reset_password_request(user_email: str) -> bool:
+    """Architectural placeholder for password reset link generation and delivery."""
+    print(f"[EmailService Stub] Password reset request queued for: {user_email}")
+    return True
+
+
+# ==============================================================================
+# Authentication Endpoints
+# ==============================================================================
+
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json(silent=True) or {}
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
 
+    # 1. Format Validation
     if not email or not EMAIL_REGEX.match(email):
-        return jsonify({"success": False, "error": "Invalid email address."}), 400
+        return jsonify({"success": False, "error": "Invalid email format. Please provide a valid email address."}), 400
+
+    # 2. Reject obvious invalid/malformed domains
+    domain = email.split("@")[-1]
+    if "." not in domain or domain.startswith(".") or domain.endswith("."):
+        return jsonify({"success": False, "error": "Invalid email domain format."}), 400
 
     if len(password) < 8:
         return (
@@ -36,7 +68,9 @@ def signup():
             400,
         )
 
-    if User.query.filter_by(email=email).first():
+    # 3. Case-insensitive Uniqueness Check
+    existing_user = User.query.filter(db.func.lower(User.email) == email).first()
+    if existing_user:
         return (
             jsonify({"success": False, "error": "Email address already registered."}),
             400,
@@ -47,6 +81,9 @@ def signup():
 
     db.session.add(user)
     db.session.commit()
+
+    # Trigger architectural email verification placeholder
+    send_verification_email(email)
 
     session["user_id"] = user.id
     session.permanent = True
@@ -61,12 +98,13 @@ def login():
     password = str(data.get("password", ""))
 
     if not email or not password:
-        return jsonify({"success": False, "error": "Email and password required."}), 400
+        return jsonify({"success": False, "error": "Email address and password are required."}), 400
 
-    user = User.query.filter_by(email=email).first()
+    # Case-insensitive query
+    user = User.query.filter(db.func.lower(User.email) == email).first()
 
     if not user or not user.check_password(password):
-        return jsonify({"success": False, "error": "Invalid email or password."}), 401
+        return jsonify({"success": False, "error": "Invalid email address or password."}), 401
 
     session["user_id"] = user.id
     session.permanent = True

@@ -1,7 +1,7 @@
 import os
 import sys
 from datetime import timedelta
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 
 # Ensure backend directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,13 +48,6 @@ with app.app_context():
         print("[App] Database auto-create warning:", e)
 
 
-@app.route("/")
-def index():
-    if os.path.exists(os.path.join(DIST_DIR, "index.html")):
-        return send_from_directory(DIST_DIR, "index.html")
-    return "CodeAnalyzer AI Backend API is running."
-
-
 def _run_analyze():
     """Shared handler for /analyze and legacy /analyze-ast (HTTP fallback)."""
     data = request.get_json(silent=True) or {}
@@ -95,6 +88,31 @@ def analyze():
 def analyze_ast():
     """Backward-compatible alias for older clients."""
     return _run_analyze()
+
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_spa(path: str):
+    """
+    SPA route handler ensuring direct browser navigation and refreshes on /home,
+    /analyzer, /history, /login, /signup serve index.html, while API routes return 404 JSON.
+    """
+    # Strict API route protection: API calls must return JSON API 404s, NOT HTML
+    if path.startswith("api/") or path in ["analyze", "analyze-ast"]:
+        return jsonify({"success": False, "error": "NotFound", "message": f"API endpoint '/{path}' not found."}), 404
+
+    # Serve static assets from /assets/ if requested
+    if path.startswith("assets/"):
+        asset_name = path[7:]
+        assets_dir = os.path.join(DIST_DIR, "assets")
+        if os.path.exists(os.path.join(assets_dir, asset_name)):
+            return send_from_directory(assets_dir, asset_name)
+
+    # All non-API frontend paths fall back to index.html for client-side routing
+    if os.path.exists(os.path.join(DIST_DIR, "index.html")):
+        return send_from_directory(DIST_DIR, "index.html")
+
+    return "CodeAnalyzer AI Backend API is running."
 
 
 if __name__ == "__main__":
