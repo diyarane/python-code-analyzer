@@ -115,6 +115,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [highlightLine, isCollapsed]);
 
+  // Synchronize Monaco Model Language and Clear Markers on Language Switch
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const model = editor.getModel();
+
+    if (!model) return;
+
+    const targetLang = detectedLanguage.monacoLanguage || 'python';
+    try {
+      monaco.editor.setModelLanguage(model, targetLang);
+      monaco.editor.setModelMarkers(model, 'codeanalyzer', []);
+    } catch (err) {
+      console.error('[CodeEditor] Error setting Monaco model language:', err);
+    }
+  }, [detectedLanguage.monacoLanguage]);
+
   // Handle Syntax/Parsing Error Markers
   useEffect(() => {
     if (!editorRef.current || !monacoRef.current || isCollapsed) return;
@@ -126,7 +144,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     if (errorLine && errorLine > 0) {
       const maxCol = model.getLineMaxColumn(errorLine) || 100;
-      monaco.editor.setModelMarkers(model, detectedLanguage.monacoLanguage || 'python', [
+      monaco.editor.setModelMarkers(model, 'codeanalyzer', [
         {
           severity: monaco.MarkerSeverity.Error,
           message: errorMessage || 'Syntax error',
@@ -138,9 +156,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       ]);
       editor.revealLineInCenter(errorLine);
     } else {
-      monaco.editor.setModelMarkers(model, detectedLanguage.monacoLanguage || 'python', []);
+      monaco.editor.setModelMarkers(model, 'codeanalyzer', []);
     }
-  }, [errorLine, errorMessage, isCollapsed, detectedLanguage]);
+  }, [errorLine, errorMessage, isCollapsed]);
 
   return (
     <section className={`workspace-section panel editor-panel-section ${isCollapsed ? 'is-collapsed' : ''}`}>

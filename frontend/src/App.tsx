@@ -15,6 +15,7 @@ import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
 import { detectFrontendLanguage } from './utils/languageDetector';
+import { getMockSample } from './utils/mockSamples';
 
 const DEFAULT_CODE = `# Mock sample loaded
 def find_duplicates(arr):
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
   });
 
   const [code, setCode] = useState<string>(DEFAULT_CODE);
+  const [isPristine, setIsPristine] = useState<boolean>(true);
   const [fileStatus, setFileStatus] = useState<string>('Mock sample loaded');
   const [uploadedFilename, setUploadedFilename] = useState<string | undefined>(undefined);
   const [selectedLanguageMode, setSelectedLanguageMode] = useState<string>('auto');
@@ -59,6 +61,20 @@ export const App: React.FC = () => {
 
   // Compute live detection result
   const detectedLanguage = detectFrontendLanguage(code, uploadedFilename, selectedLanguageMode);
+
+  // Synchronize pristine mock sample and invalidate previous analysis results when language selection changes
+  useEffect(() => {
+    const activeLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
+    if (isPristine) {
+      const mockCode = getMockSample(activeLang);
+      setCode(mockCode);
+      setFileStatus('Mock sample loaded');
+    }
+    setAnalysisResponse(null);
+    setHighlightLine(null);
+    setAnalysisState('Ready');
+    setIsSaved(false);
+  }, [selectedLanguageMode]);
 
   const navigate = useCallback((route: string) => {
     setCurrentRoute(route);
@@ -92,6 +108,7 @@ export const App: React.FC = () => {
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
+    setIsPristine(false);
     setIsSaved(false);
   };
 
@@ -103,13 +120,18 @@ export const App: React.FC = () => {
     setCode(newCode);
     setFileStatus(filename);
     setUploadedFilename(filename);
+    setIsPristine(false);
     setIsSaved(false);
+    setAnalysisResponse(null);
+    setHighlightLine(null);
+    setAnalysisState('Ready');
   };
 
   const handleClearCode = () => {
     setCode('');
     setFileStatus('Empty');
     setUploadedFilename(undefined);
+    setIsPristine(false);
     setAnalysisResponse(null);
     setHighlightLine(null);
     setAnalysisState('Ready');
@@ -117,10 +139,15 @@ export const App: React.FC = () => {
   };
 
   const handleResetExample = () => {
-    setCode(DEFAULT_CODE);
+    const activeLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
+    const mockCode = getMockSample(activeLang);
+    setCode(mockCode);
     setFileStatus('Mock sample loaded');
     setUploadedFilename(undefined);
+    setIsPristine(true);
     setHighlightLine(null);
+    setAnalysisResponse(null);
+    setAnalysisState('Ready');
     setIsSaved(false);
   };
 
