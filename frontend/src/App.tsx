@@ -43,6 +43,7 @@ export const App: React.FC = () => {
   const [analysisState, setAnalysisState] = useState<string>('Ready');
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState<boolean>(false);
 
   // Save Modal State
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -239,35 +240,32 @@ export const App: React.FC = () => {
             isSocketConnected={isSocketConnected}
           />
 
-          <CodeEditor
-            value={code}
-            onChange={handleCodeChange}
-            onAnalyze={runAnalyze}
-            onClear={handleClearCode}
-            onResetExample={handleResetExample}
-            theme={theme}
-            fileStatus={fileStatus}
-            highlightLine={highlightLine}
-            errorLine={errorLine}
-            errorMessage={errorMessage}
-            isAnalyzing={isAnalyzing}
-          />
+          {/* Row 1: Python Editor (50%) | Analysis Results (50%) */}
+          <div className={`editor-results-row ${isEditorCollapsed ? 'is-collapsed-row' : ''}`}>
+            <CodeEditor
+              value={code}
+              onChange={handleCodeChange}
+              onAnalyze={runAnalyze}
+              onClear={handleClearCode}
+              onResetExample={handleResetExample}
+              theme={theme}
+              fileStatus={fileStatus}
+              highlightLine={highlightLine}
+              errorLine={errorLine}
+              errorMessage={errorMessage}
+              isAnalyzing={isAnalyzing}
+              isCollapsed={isEditorCollapsed}
+              onToggleCollapse={() => setIsEditorCollapsed((prev) => !prev)}
+            />
 
-          <MetricsGrid
-            metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
-            error={!analysisResponse?.success ? analysisResponse?.error : null}
-            errorMessage={errorMessage}
-          />
+            <MetricsGrid
+              metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+              error={!analysisResponse?.success ? analysisResponse?.error : null}
+              errorMessage={errorMessage}
+            />
+          </div>
 
-          <AstVisualizer
-            astData={analysisResponse?.success ? analysisResponse.ast || null : null}
-            nodeCount={analysisResponse?.node_count}
-            warnings={analysisResponse?.warnings}
-            errorMessage={errorMessage}
-            cached={analysisResponse?.cached}
-            onSelectNode={setHighlightLine}
-          />
-
+          {/* Row 2: Full-Width AI Explanation */}
           <AnalysisPanel
             explanations={
               analysisResponse?.success ? analysisResponse.explanations || null : null
@@ -277,6 +275,16 @@ export const App: React.FC = () => {
             onSaveExplanation={handleInitiateSave}
             isSaved={isSaved}
             canSave={!!analysisResponse && !!analysisResponse.success}
+          />
+
+          {/* Row 3: Full-Width Interactive AST */}
+          <AstVisualizer
+            astData={analysisResponse?.success ? analysisResponse.ast || null : null}
+            nodeCount={analysisResponse?.node_count}
+            warnings={analysisResponse?.warnings}
+            errorMessage={errorMessage}
+            cached={analysisResponse?.cached}
+            onSelectNode={setHighlightLine}
           />
         </main>
       )}

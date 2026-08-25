@@ -6,6 +6,8 @@ interface SignupPageProps {
   onNavigate: (route: string) => void;
 }
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
   const { signup } = useAuth();
   const [email, setEmail] = useState('');
@@ -13,14 +15,18 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEmailValid = EMAIL_REGEX.test(email.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailTouched(true);
 
-    if (!email.trim()) {
-      setError('Please enter a valid email address.');
+    if (!isEmailValid) {
+      setError('Please enter a valid email address (e.g. user@example.com).');
       return;
     }
     if (password.length < 8) {
@@ -34,7 +40,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
 
     setIsSubmitting(true);
     try {
-      const res = await signup(email, password);
+      const res = await signup(email.trim(), password);
       if (res.success) {
         onNavigate('home');
       } else {
@@ -76,10 +82,17 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
               type="email"
               placeholder="developer@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={() => setEmailTouched(true)}
               required
               autoFocus
             />
+            {emailTouched && email.length > 0 && !isEmailValid && (
+              <span className="field-error-text">Please enter a valid email address with domain (e.g. user@example.com).</span>
+            )}
           </div>
 
           <div className="auth-field">
@@ -116,7 +129,11 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary auth-submit-btn" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="btn btn-primary auth-submit-btn"
+            disabled={isSubmitting || (emailTouched && !isEmailValid)}
+          >
             {isSubmitting ? 'Creating account...' : 'Create Account'}
           </button>
 

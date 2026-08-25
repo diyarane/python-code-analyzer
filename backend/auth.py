@@ -5,8 +5,8 @@ from models import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-# RFC-compliant email regex format validation
-EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# Strict RFC TLD Email Format Regex (requires local, @, domain, and TLD)
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 def get_current_user() -> User | None:
@@ -48,12 +48,16 @@ def signup():
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
 
-    # 1. Format Validation
+    # 1. Format Validation (Strict TLD requirement)
     if not email or not EMAIL_REGEX.match(email):
-        return jsonify({"success": False, "error": "Invalid email format. Please provide a valid email address."}), 400
+        return jsonify({"success": False, "error": "Invalid email format. Please provide a valid address (e.g. user@example.com)."}), 400
 
-    # 2. Reject obvious invalid/malformed domains
-    domain = email.split("@")[-1]
+    # 2. Reject malformed domains (e.g. developer@., developer@example without TLD)
+    parts = email.split("@")
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        return jsonify({"success": False, "error": "Malformed email address structure."}), 400
+
+    domain = parts[1]
     if "." not in domain or domain.startswith(".") or domain.endswith("."):
         return jsonify({"success": False, "error": "Invalid email domain format."}), 400
 
@@ -99,6 +103,9 @@ def login():
 
     if not email or not password:
         return jsonify({"success": False, "error": "Email address and password are required."}), 400
+
+    if not EMAIL_REGEX.match(email):
+        return jsonify({"success": False, "error": "Invalid email address format."}), 400
 
     # Case-insensitive query
     user = User.query.filter(db.func.lower(User.email) == email).first()

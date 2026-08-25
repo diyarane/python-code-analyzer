@@ -13,6 +13,8 @@ interface CodeEditorProps {
   errorLine: number | null;
   errorMessage: string | null;
   isAnalyzing: boolean;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -26,11 +28,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   highlightLine,
   errorLine,
   errorMessage,
+  isCollapsed,
+  onToggleCollapse,
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const decorationsRef = useRef<string[]>([]);
   const onAnalyzeRef = useRef(onAnalyze);
+
+  const lineCount = value.split('\n').length;
 
   useEffect(() => {
     onAnalyzeRef.current = onAnalyze;
@@ -44,11 +50,40 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onAnalyzeRef.current();
     });
+
+    // Monaco Scroll Boundary Propagation: Prevent trapping mouse wheel at top/bottom boundaries
+    const domNode = editor.getDomNode();
+    if (domNode) {
+      domNode.addEventListener(
+        'wheel',
+        (e: WheelEvent) => {
+          const model = editor.getModel();
+          if (!model) return;
+
+          const totalLines = model.getLineCount();
+          const visibleRanges = editor.getVisibleRanges();
+          if (!visibleRanges || visibleRanges.length === 0) return;
+
+          const firstVisible = visibleRanges[0].startLineNumber;
+          const lastVisible = visibleRanges[visibleRanges.length - 1].endLineNumber;
+          const scrollTop = editor.getScrollTop();
+
+          const isAtTop = firstVisible === 1 && scrollTop === 0;
+          const isAtBottom = lastVisible >= totalLines;
+
+          // If scrolling UP at top boundary or DOWN at bottom boundary, propagate to window
+          if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+            window.scrollBy({ top: e.deltaY, behavior: 'auto' });
+          }
+        },
+        { passive: true }
+      );
+    }
   };
 
   // Handle AST Node selection line highlight
   useEffect(() => {
-    if (!editorRef.current || !monacoRef.current) return;
+    if (!editorRef.current || !monacoRef.current || isCollapsed) return;
     const editor = editorRef.current;
     const monaco = monacoRef.current;
 
@@ -75,11 +110,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         /* ignore */
       }
     }
-  }, [highlightLine]);
+  }, [highlightLine, isCollapsed]);
 
   // Handle Syntax/Parsing Error Markers
   useEffect(() => {
-    if (!editorRef.current || !monacoRef.current) return;
+    if (!editorRef.current || !monacoRef.current || isCollapsed) return;
     const editor = editorRef.current;
     const monaco = monacoRef.current;
     const model = editor.getModel();
@@ -102,63 +137,82 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     } else {
       monaco.editor.setModelMarkers(model, 'python', []);
     }
-  }, [errorLine, errorMessage]);
+  }, [errorLine, errorMessage, isCollapsed]);
 
   return (
-    <section className="workspace-section panel editor-panel-section">
-      <div className="section-header">
-        <div>
+    <section className={`workspace-section panel editor-panel-section ${isCollapsed ? 'is-collapsed' : ''}`}>
+      <div className="section-header editor-header">
+        <div className="editor-header-left">
           <p className="eyebrow">Workspace</p>
           <h2>Python Editor</h2>
-          <p className="section-subtitle">Write, edit, or paste Python source code for analysis.</p>
+          {!isCollapsed && <p className="section-subtitle">Write, paste, or upload Python source code.</p>}
         </div>
+
         <div className="section-header-actions">
+          {!isCollapsed && (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary nav-btn-sm"
+                onClick={onClear}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary nav-btn-sm"
+                onClick={onResetExample}
+              >
+                Reset
+              </button>
+            </>
+          )}
+
+          <span className="status-pill">
+            {isCollapsed ? `${lineCount} lines` : fileStatus}
+          </span>
+
           <button
             type="button"
-            className="btn btn-secondary nav-btn-sm"
-            onClick={onClear}
+            className="btn btn-secondary nav-btn-sm collapse-btn"
+            onClick={onToggleCollapse}
+            title={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
           >
-            Clear
+            {isCollapsed ? 'Expand ↓' : 'Collapse ↑'}
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary nav-btn-sm"
-            onClick={onResetExample}
-          >
-            Reset
-          </button>
-          <span className="status-pill">{fileStatus}</span>
         </div>
       </div>
 
-      <div className="editor-container">
-        <Editor
-          height="400px"
-          language="python"
-          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
-          value={value}
-          onChange={(val) => onChange(val || '')}
-          onMount={handleEditorMount}
-          options={{
-            automaticLayout: true,
-            minimap: { enabled: true, renderCharacters: false },
-            fontSize: 14,
-            fontLigatures: true,
-            lineHeight: 22,
-            padding: { top: 14, bottom: 14 },
-            scrollBeyondLastLine: false,
-            smoothScrolling: true,
-            roundedSelection: true,
-            cursorBlinking: 'smooth',
-            glyphMargin: true,
-            folding: true,
-            matchBrackets: 'always',
-            autoIndent: 'advanced',
-            wordWrap: 'on',
-            renderLineHighlight: 'all',
-          }}
-        />
-      </div>
+      {!isCollapsed && (
+        <div className="editor-container">
+          <Editor
+            height="340px"
+            language="python"
+            theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+            value={value}
+            onChange={(val) => onChange(val || '')}
+            onMount={handleEditorMount}
+            options={{
+              automaticLayout: true,
+              minimap: { enabled: true, renderCharacters: false },
+              fontSize: 14,
+              fontLigatures: true,
+              lineHeight: 22,
+              padding: { top: 12, bottom: 12 },
+              scrollBeyondLastLine: false,
+              smoothScrolling: true,
+              roundedSelection: true,
+              cursorBlinking: 'smooth',
+              glyphMargin: true,
+              folding: true,
+              matchBrackets: 'always',
+              autoIndent: 'advanced',
+              wordWrap: 'on',
+              renderLineHighlight: 'all',
+            }}
+          />
+        </div>
+      )}
     </section>
   );
 };

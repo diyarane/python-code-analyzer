@@ -6,26 +6,36 @@ interface LoginPageProps {
   onNavigate: (route: string) => void;
 }
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEmailValid = EMAIL_REGEX.test(email.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailTouched(true);
 
-    if (!email.trim() || !password) {
-      setError('Please enter both your email address and password.');
+    if (!isEmailValid) {
+      setError('Please enter a valid email address (e.g. user@example.com).');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await login(email, password);
+      const res = await login(email.trim(), password);
       if (res.success) {
         onNavigate('home');
       } else {
@@ -67,10 +77,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
               type="email"
               placeholder="developer@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={() => setEmailTouched(true)}
               required
               autoFocus
             />
+            {emailTouched && email.length > 0 && !isEmailValid && (
+              <span className="field-error-text">Please enter a valid email address with domain (e.g. user@example.com).</span>
+            )}
           </div>
 
           <div className="auth-field">
@@ -95,7 +112,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary auth-submit-btn" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="btn btn-primary auth-submit-btn"
+            disabled={isSubmitting || (emailTouched && !isEmailValid)}
+          >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
 
