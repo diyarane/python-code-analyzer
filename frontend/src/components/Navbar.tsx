@@ -2,12 +2,13 @@ import React, { useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
+  currentRoute: 'home' | 'analyzer' | 'history';
+  onNavigate: (route: 'home' | 'analyzer' | 'history') => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onAnalyze: () => void;
   onFileUpload: (code: string, filename: string) => void;
   onOpenAuthModal: (mode: 'login' | 'signup') => void;
-  onOpenHistory: () => void;
   onSaveAnalysis: () => void;
   canSave: boolean;
   isAnalyzing: boolean;
@@ -15,12 +16,13 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  currentRoute,
+  onNavigate,
   theme,
   onToggleTheme,
   onAnalyze,
   onFileUpload,
   onOpenAuthModal,
-  onOpenHistory,
   onSaveAnalysis,
   canSave,
   isAnalyzing,
@@ -42,19 +44,54 @@ export const Navbar: React.FC<NavbarProps> = ({
     reader.onload = () => {
       const content = String(reader.result || '');
       onFileUpload(content, file.name);
+      onNavigate('analyzer');
     };
     reader.readAsText(file);
   };
 
   return (
     <nav className="navbar">
-      <a className="brand" href="#" aria-label="CodeAnalyzer AI home">
-        <span className="brand-mark">CA</span>
-        <span>
-          <strong>CodeAnalyzer AI</strong>
-          <small>Static intelligence platform</small>
-        </span>
-      </a>
+      <div className="nav-left">
+        <a
+          className="brand"
+          href="/home"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate('home');
+          }}
+          aria-label="CodeAnalyzer AI home"
+        >
+          <span className="brand-mark">CA</span>
+          <span>
+            <strong>CodeAnalyzer AI</strong>
+            <small>Static intelligence platform</small>
+          </span>
+        </a>
+
+        <div className="nav-menu">
+          <button
+            type="button"
+            className={`nav-link ${currentRoute === 'home' ? 'is-active' : ''}`}
+            onClick={() => onNavigate('home')}
+          >
+            Home
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${currentRoute === 'analyzer' ? 'is-active' : ''}`}
+            onClick={() => onNavigate('analyzer')}
+          >
+            Analyzer
+          </button>
+          <button
+            type="button"
+            className={`nav-link ${currentRoute === 'history' ? 'is-active' : ''}`}
+            onClick={() => onNavigate('history')}
+          >
+            History
+          </button>
+        </div>
+      </div>
 
       <div className="nav-actions">
         <input
@@ -64,44 +101,38 @@ export const Navbar: React.FC<NavbarProps> = ({
           accept=".py"
           onChange={handleFileChange}
         />
-        <button
-          className="btn btn-secondary"
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          Upload ({fileStatus})
-        </button>
 
-        {user && canSave && (
-          <button
-            className="btn btn-secondary"
-            type="button"
-            onClick={onSaveAnalysis}
-            title="Save analysis to your account history"
-          >
-            Save Analysis
-          </button>
+        {currentRoute === 'analyzer' && (
+          <>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Upload ({fileStatus})
+            </button>
+
+            {user && canSave && (
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={onSaveAnalysis}
+                title="Save analysis to your account history"
+              >
+                Save Analysis
+              </button>
+            )}
+
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={onAnalyze}
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? 'Analyzing…' : 'Analyze'}
+            </button>
+          </>
         )}
-
-        {user && (
-          <button
-            className="btn btn-secondary"
-            type="button"
-            onClick={onOpenHistory}
-            title="View saved history"
-          >
-            History
-          </button>
-        )}
-
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={onAnalyze}
-          disabled={isAnalyzing}
-        >
-          {isAnalyzing ? 'Analyzing…' : 'Analyze'}
-        </button>
 
         {user ? (
           <div className="user-profile">

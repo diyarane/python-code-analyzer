@@ -6,8 +6,10 @@ import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { AuthModal } from './components/AuthModal';
-import { HistoryPanel } from './components/HistoryPanel';
+import { HomePage } from './components/HomePage';
+import { HistoryPage } from './components/HistoryPage';
 import { useAnalysisSocket } from './hooks/useAnalysisSocket';
+import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
 
@@ -20,8 +22,17 @@ const DEFAULT_CODE = `def find_duplicates(arr):
     return duplicates`;
 
 export const App: React.FC = () => {
+  const { user } = useAuth();
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('codeanalyzer-theme') as 'dark' | 'light') || 'dark';
+  });
+
+  // Client Routing State: /home, /analyzer, /history
+  const [currentRoute, setCurrentRoute] = useState<'home' | 'analyzer' | 'history'>(() => {
+    const path = window.location.pathname.replace('/', '').toLowerCase();
+    if (path === 'analyzer') return 'analyzer';
+    if (path === 'history') return 'history';
+    return 'home';
   });
 
   const [code, setCode] = useState<string>(DEFAULT_CODE);
@@ -31,14 +42,29 @@ export const App: React.FC = () => {
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
 
-  // Auth & History State
+  // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
 
   const isAnalyzing = isAnalyzingLocal || isSocketAnalyzing;
+
+  const navigate = useCallback((route: 'home' | 'analyzer' | 'history') => {
+    setCurrentRoute(route);
+    window.history.pushState({}, '', `/${route}`);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace('/', '').toLowerCase();
+      if (path === 'analyzer') setCurrentRoute('analyzer');
+      else if (path === 'history') setCurrentRoute('history');
+      else setCurrentRoute('home');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -131,7 +157,7 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSelectRecord = (selectedCode: string, res: AnalyzeResponse) => {
+  const handleLoadSnippet = (selectedCode: string, res: AnalyzeResponse) => {
     setCode(selectedCode);
     setAnalysisResponse(res);
     setFileStatus('Loaded from history');
@@ -145,89 +171,102 @@ export const App: React.FC = () => {
   return (
     <div className="app-shell">
       <Navbar
+        currentRoute={currentRoute}
+        onNavigate={navigate}
         theme={theme}
         onToggleTheme={toggleTheme}
         onAnalyze={runAnalyze}
         onFileUpload={handleFileUpload}
         onOpenAuthModal={handleOpenAuthModal}
-        onOpenHistory={() => setIsHistoryOpen(true)}
         onSaveAnalysis={handleSaveAnalysis}
         canSave={!!analysisResponse && !!analysisResponse.success}
         isAnalyzing={isAnalyzing}
         fileStatus={fileStatus}
       />
 
-      <main className="dashboard">
-        <CodeEditor
-          value={code}
-          onChange={setCode}
-          onAnalyze={runAnalyze}
-          onClear={handleClearCode}
-          onResetExample={handleResetExample}
-          theme={theme}
-          fileStatus={fileStatus}
-          highlightLine={highlightLine}
-          errorLine={errorLine}
-          errorMessage={errorMessage}
-          isAnalyzing={isAnalyzing}
+      {currentRoute === 'home' && (
+        <HomePage
+          onNavigate={navigate}
+          onOpenAuth={handleOpenAuthModal}
+          onLoadSnippet={handleLoadSnippet}
         />
+      )}
 
-        <section className="panel results-panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Analysis</p>
-              <h2>Results Overview</h2>
-            </div>
-            <span
-              className={`status-pill ${
-                analysisState === 'Ready' ? 'status-pill-idle' : ''
-              }`}
-            >
-              {analysisState}
-            </span>
-          </div>
+      {currentRoute === 'history' && (
+        <HistoryPage
+          onNavigate={navigate}
+          onLoadSnippet={handleLoadSnippet}
+          onOpenAuth={handleOpenAuthModal}
+        />
+      )}
 
-          <ProgressIndicator
-            stages={stages}
+      {currentRoute === 'analyzer' && (
+        <main className="dashboard">
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            onAnalyze={runAnalyze}
+            onClear={handleClearCode}
+            onResetExample={handleResetExample}
+            theme={theme}
+            fileStatus={fileStatus}
+            highlightLine={highlightLine}
+            errorLine={errorLine}
+            errorMessage={errorMessage}
             isAnalyzing={isAnalyzing}
-            isSocketConnected={isSocketConnected}
           />
 
-          <MetricsGrid
-            metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+          <section className="panel results-panel">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Analysis</p>
+                <h2>Results Overview</h2>
+              </div>
+              <span
+                className={`status-pill ${
+                  analysisState === 'Ready' ? 'status-pill-idle' : ''
+                }`}
+              >
+                {analysisState}
+              </span>
+            </div>
+
+            <ProgressIndicator
+              stages={stages}
+              isAnalyzing={isAnalyzing}
+              isSocketConnected={isSocketConnected}
+            />
+
+            <MetricsGrid
+              metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+              error={!analysisResponse?.success ? analysisResponse?.error : null}
+              errorMessage={errorMessage}
+            />
+
+            <AstVisualizer
+              astData={analysisResponse?.success ? analysisResponse.ast || null : null}
+              nodeCount={analysisResponse?.node_count}
+              warnings={analysisResponse?.warnings}
+              errorMessage={errorMessage}
+              cached={analysisResponse?.cached}
+              onSelectNode={setHighlightLine}
+            />
+          </section>
+
+          <AnalysisPanel
+            explanations={
+              analysisResponse?.success ? analysisResponse.explanations || null : null
+            }
             error={!analysisResponse?.success ? analysisResponse?.error : null}
             errorMessage={errorMessage}
           />
-
-          <AstVisualizer
-            astData={analysisResponse?.success ? analysisResponse.ast || null : null}
-            nodeCount={analysisResponse?.node_count}
-            warnings={analysisResponse?.warnings}
-            errorMessage={errorMessage}
-            cached={analysisResponse?.cached}
-            onSelectNode={setHighlightLine}
-          />
-        </section>
-
-        <AnalysisPanel
-          explanations={
-            analysisResponse?.success ? analysisResponse.explanations || null : null
-          }
-          error={!analysisResponse?.success ? analysisResponse?.error : null}
-          errorMessage={errorMessage}
-        />
-      </main>
+        </main>
+      )}
 
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
-      />
-
-      <HistoryPanel
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        onSelectRecord={handleSelectRecord}
       />
     </div>
   );
