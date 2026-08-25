@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
+from ...explanation_builder import generate_language_aware_explanations
 
 
 class JavaScriptAnalyzer(BaseAnalyzer):
@@ -39,7 +40,7 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
         _notify("ai_analysis_started")
         ast_json = serialize_ts_node(root_node, source_code)
-        explanations = self._build_explanations(metrics, tree.language_id)
+        explanations = generate_language_aware_explanations(tree.language_id, metrics, root_node)
         _notify("ai_analysis_completed")
 
         return {
@@ -95,22 +96,6 @@ class JavaScriptAnalyzer(BaseAnalyzer):
         for child in node.children:
             max_depth = max(max_depth, self._get_max_cond_depth(child, next_depth))
         return max_depth
-
-    def _build_explanations(self, metrics: dict, lang_id: str) -> dict:
-        lang_title = "JavaScript/JSX" if "jsx" in lang_id else "JavaScript"
-        time_c = metrics["time_complexity"]
-        space_c = metrics["space_complexity"]
-        score = metrics["optimization_score"]
-
-        return {
-            "summary": (
-                f"Parsed {lang_title} source code using Tree-sitter AST parser. "
-                f"Analyzed control flow, statement depth, and syntax constructs."
-            ),
-            "time": f"Estimated time complexity is {time_c} based on loop depth.",
-            "space": f"Estimated space complexity is {space_c}.",
-            "optimization": f"Optimization score is {score}/100 based on loop and branch nesting.",
-        }
 
 
 def serialize_ts_node(node, source_code: str, depth: int = 0) -> dict:

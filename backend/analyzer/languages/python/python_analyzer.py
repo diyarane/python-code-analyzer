@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Optional
 
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...complexity import analyze_complexity
+from ...explanation_builder import generate_language_aware_explanations
 from ...normalized_metrics import build_metric_status_map
 from ...utils import count_ast_nodes, safe_unparse
 
@@ -54,7 +55,7 @@ class PythonAnalyzer(BaseAnalyzer):
 
         _notify("ai_analysis_started")
         ast_json = ast_to_json(raw_ast, depth_limit=depth_limit)
-        explanations = build_explanations(metrics)
+        explanations = generate_language_aware_explanations("python", metrics, raw_ast)
         _notify("ai_analysis_completed")
 
         return {
