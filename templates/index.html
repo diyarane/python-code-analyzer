@@ -66,7 +66,14 @@
               <p class="eyebrow">Compiler View</p>
               <h2>Interactive AST</h2>
             </div>
-            <span id="ast-warning" class="status-pill">Waiting for code</span>
+            <div class="ast-toolbar-right">
+              <div class="ast-btn-group" role="group" aria-label="AST view controls">
+                <button id="ast-zoom-in" class="ast-btn" type="button" title="Zoom In" aria-label="Zoom In">+</button>
+                <button id="ast-zoom-out" class="ast-btn" type="button" title="Zoom Out" aria-label="Zoom Out">−</button>
+                <button id="ast-zoom-reset" class="ast-btn" type="button" title="Fit / Reset View">Reset</button>
+              </div>
+              <span id="ast-warning" class="status-pill">Waiting for code</span>
+            </div>
           </div>
           <div id="ast-visualization" class="ast-visualization">
             <div class="ast-empty-state">
@@ -92,10 +99,10 @@
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="{{ url_for('static', filename='js/api.js') }}"></script>
   <script src="{{ url_for('static', filename='js/astVisualizer.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>

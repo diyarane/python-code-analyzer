@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, render_template, request
 
-from ast_engine.ast_parser import parse_python_code
+from analyzer.ast_parser import analyze_code
 
 
 app = Flask(__name__)
@@ -11,9 +11,8 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/analyze-ast", methods=["POST"])
-def analyze_ast():
-    """Parse editor code into AST JSON and return dashboard metrics."""
+def _run_analyze():
+    """Shared handler for /analyze and legacy /analyze-ast."""
     data = request.get_json(silent=True) or {}
     source_code = data.get("code", "")
 
@@ -27,9 +26,21 @@ def analyze_ast():
             }
         ), 400
 
-    result = parse_python_code(source_code)
+    result = analyze_code(source_code)
     status_code = 200 if result.get("success") else 400
     return jsonify(result), status_code
+
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    """Parse code from the editor: AST JSON + metrics + explanations."""
+    return _run_analyze()
+
+
+@app.route("/analyze-ast", methods=["POST"])
+def analyze_ast():
+    """Backward-compatible alias for older clients."""
+    return _run_analyze()
 
 
 if __name__ == "__main__":
