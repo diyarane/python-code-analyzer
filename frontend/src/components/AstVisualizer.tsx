@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   useNodesState,
@@ -7,7 +7,6 @@ import ReactFlow, {
   MiniMap,
   Background,
   Node,
-  Edge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -72,17 +71,18 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
   );
 
   return (
-    <div className="ast-panel">
-      <div className="ast-toolbar">
+    <section className="workspace-section panel ast-panel-section">
+      <div className="section-header">
         <div>
           <p className="eyebrow">Compiler View</p>
           <h2>Interactive AST</h2>
+          <p className="section-subtitle">Explore the structure of the analyzed Python code.</p>
         </div>
-        <div className="ast-toolbar-right">
+        <div className="section-header-actions">
           <div className="ast-btn-group" role="group" aria-label="AST view controls">
-            <button className="ast-btn" type="button" onClick={handleZoomIn} title="Zoom In">+</button>
-            <button className="ast-btn" type="button" onClick={handleZoomOut} title="Zoom Out">−</button>
-            <button className="ast-btn" type="button" onClick={handleResetZoom} title="Fit / Reset View">Reset</button>
+            <button className="btn btn-secondary nav-btn-sm" type="button" onClick={handleZoomIn} title="Zoom In">+</button>
+            <button className="btn btn-secondary nav-btn-sm" type="button" onClick={handleZoomOut} title="Zoom Out">−</button>
+            <button className="btn btn-secondary nav-btn-sm" type="button" onClick={handleResetZoom} title="Fit View">Fit View</button>
           </div>
           <span className="status-pill">
             {errorMessage
@@ -91,12 +91,12 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
               ? 'Cached result'
               : astData
               ? `${nodeCount ?? '?'} nodes${warnings?.length ? ' · limited depth' : ''}`
-              : 'Waiting for code'}
+              : 'Awaiting analysis'}
           </span>
         </div>
       </div>
 
-      <div className="ast-visualization">
+      <div className="ast-container">
         {errorMessage ? (
           <div className="ast-empty-state ast-error-state">
             <strong>Unable to build AST</strong>
@@ -119,25 +119,25 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
             maxZoom={2.5}
             proOptions={{ hideAttribution: true }}
           >
-            <Background color="rgba(125, 211, 252, 0.08)" gap={28} size={1} />
+            <Background color="rgba(255, 255, 255, 0.08)" gap={24} size={1} />
             <MiniMap
               style={{
-                backgroundColor: 'rgba(10, 16, 30, 0.88)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
+                backgroundColor: '#121212',
+                border: '1px solid #262626',
+                borderRadius: '6px',
               }}
               nodeColor={(n) => {
                 const w = n.data?.complexity_weight;
-                if (w === 3) return 'var(--danger)';
-                if (w === 2) return 'var(--warning)';
-                return 'var(--success)';
+                if (w === 3) return '#ef4444';
+                if (w === 2) return '#f59e0b';
+                return '#10b981';
               }}
-              maskColor="rgba(6, 9, 20, 0.65)"
+              maskColor="rgba(8, 8, 8, 0.75)"
             />
           </ReactFlow>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 

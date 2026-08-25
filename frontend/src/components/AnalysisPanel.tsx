@@ -20,11 +20,12 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   canSave = false,
 }) => {
   return (
-    <aside className="panel ai-panel">
-      <div className="panel-header">
+    <section className="workspace-section panel ai-panel-section">
+      <div className="section-header">
         <div>
-          <p className="eyebrow">Assistant</p>
+          <p className="eyebrow">Technical Assistant</p>
           <h2>AI Explanation</h2>
+          <p className="section-subtitle">Understand what the analyzer found and why.</p>
         </div>
 
         {canSave && onSaveExplanation && (
@@ -53,31 +54,39 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
       <div className="ai-output">
         {error ? (
           <article className="explanation-card">
-            <span className="insight-tag">Parser</span>
+            <span className="insight-tag">Parser Error</span>
             <p>
               <strong>{error}</strong>: {errorMessage || 'Check Python syntax and try again.'}
             </p>
           </article>
         ) : explanations ? (
-          <article className="explanation-card">
-            <span className="insight-tag">Analysis</span>
-            <p>{explanations.summary}</p>
-            <p>
-              <strong>Time</strong> — {explanations.time}
-            </p>
-            <p>
-              <strong>Space</strong> — {explanations.space}
-            </p>
-            <p>
-              <strong>Optimization</strong> — {explanations.optimization}
-            </p>
-          </article>
+          <div className="explanation-grid">
+            <article className="explanation-card">
+              <span className="insight-tag">Summary</span>
+              <p>{explanations.summary}</p>
+            </article>
+
+            <article className="explanation-card">
+              <span className="insight-tag">Complexity Analysis</span>
+              <p>
+                <strong>Time Complexity:</strong> {explanations.time}
+              </p>
+              <p style={{ marginTop: '6px' }}>
+                <strong>Space Complexity:</strong> {explanations.space}
+              </p>
+            </article>
+
+            <article className="explanation-card">
+              <span className="insight-tag">Optimization & Recommendations</span>
+              <p>{explanations.optimization}</p>
+            </article>
+          </div>
         ) : (
           <div className="ai-empty-text">
-            Click <strong>Analyze</strong> to generate static complexity explanations and recommendations for the current code.
+            Run analysis to generate explanations and refactoring recommendations for your code.
           </div>
         )}
       </div>
-    </aside>
+    </section>
   );
 };

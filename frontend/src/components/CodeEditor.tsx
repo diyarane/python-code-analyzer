@@ -26,7 +26,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   highlightLine,
   errorLine,
   errorMessage,
-  isAnalyzing,
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -106,38 +105,35 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [errorLine, errorMessage]);
 
   return (
-    <section className="panel editor-panel">
-      <div className="panel-header">
+    <section className="workspace-section panel editor-panel-section">
+      <div className="section-header">
         <div>
-          <p className="eyebrow">Input</p>
-          <h1>Python Editor</h1>
+          <p className="eyebrow">Workspace</p>
+          <h2>Python Editor</h2>
+          <p className="section-subtitle">Write, edit, or paste Python source code for analysis.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="ast-btn-group" role="group" aria-label="Editor actions">
-            <button
-              className="ast-btn"
-              type="button"
-              onClick={onClear}
-              title="Clear Editor"
-            >
-              Clear
-            </button>
-            <button
-              className="ast-btn"
-              type="button"
-              onClick={onResetExample}
-              title="Reset Example Code"
-            >
-              Reset
-            </button>
-          </div>
+        <div className="section-header-actions">
+          <button
+            type="button"
+            className="btn btn-secondary nav-btn-sm"
+            onClick={onClear}
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary nav-btn-sm"
+            onClick={onResetExample}
+          >
+            Reset
+          </button>
           <span className="status-pill">{fileStatus}</span>
         </div>
       </div>
 
-      <div className="editor">
+      <div className="editor-container">
         <Editor
-          height="100%"
+          height="400px"
           language="python"
           theme={theme === 'dark' ? 'vs-dark' : 'vs'}
           value={value}
@@ -149,7 +145,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             fontSize: 14,
             fontLigatures: true,
             lineHeight: 22,
-            padding: { top: 18, bottom: 18 },
+            padding: { top: 14, bottom: 14 },
             scrollBeyondLastLine: false,
             smoothScrolling: true,
             roundedSelection: true,

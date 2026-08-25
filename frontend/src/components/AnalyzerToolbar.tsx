@@ -38,13 +38,13 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
   };
 
   return (
-    <div className="analyzer-toolbar">
-      <div className="toolbar-left">
-        <span className="toolbar-title">Python Workspace</span>
-        <span className="toolbar-status-badge">{fileStatus}</span>
+    <div className="analyzer-header-container">
+      <div className="analyzer-header-text">
+        <h1 className="analyzer-page-title">Python Analyzer</h1>
+        <p className="analyzer-page-sub">Inspect structure, complexity, dead code, and optimization opportunities.</p>
       </div>
 
-      <div className="toolbar-right">
+      <div className="analyzer-header-actions">
         <input
           ref={fileInputRef}
           className="file-input"
@@ -80,7 +80,7 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
         </button>
 
         <button
-          className="btn btn-primary toolbar-btn"
+          className="btn btn-primary toolbar-btn analyze-cta-btn"
           type="button"
           onClick={onAnalyze}
           disabled={isAnalyzing}

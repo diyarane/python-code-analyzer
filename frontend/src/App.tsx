@@ -223,7 +223,7 @@ export const App: React.FC = () => {
       )}
 
       {currentRoute === 'analyzer' && (
-        <>
+        <main className="analyzer-workspace-flow">
           <AnalyzerToolbar
             fileStatus={fileStatus}
             onFileUpload={handleFileUpload}
@@ -233,72 +233,52 @@ export const App: React.FC = () => {
             isAnalyzing={isAnalyzing}
           />
 
-          <main className="dashboard">
-            <CodeEditor
-              value={code}
-              onChange={handleCodeChange}
-              onAnalyze={runAnalyze}
-              onClear={handleClearCode}
-              onResetExample={handleResetExample}
-              theme={theme}
-              fileStatus={fileStatus}
-              highlightLine={highlightLine}
-              errorLine={errorLine}
-              errorMessage={errorMessage}
-              isAnalyzing={isAnalyzing}
-            />
+          <ProgressIndicator
+            stages={stages}
+            isAnalyzing={isAnalyzing}
+            isSocketConnected={isSocketConnected}
+          />
 
-            <section className="panel results-panel">
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Analysis</p>
-                  <h2>Results Overview</h2>
-                </div>
-                <span
-                  className={`status-pill ${
-                    analysisState === 'Ready' || analysisState === 'Restored'
-                      ? 'status-pill-idle'
-                      : ''
-                  }`}
-                >
-                  {analysisState}
-                </span>
-              </div>
+          <CodeEditor
+            value={code}
+            onChange={handleCodeChange}
+            onAnalyze={runAnalyze}
+            onClear={handleClearCode}
+            onResetExample={handleResetExample}
+            theme={theme}
+            fileStatus={fileStatus}
+            highlightLine={highlightLine}
+            errorLine={errorLine}
+            errorMessage={errorMessage}
+            isAnalyzing={isAnalyzing}
+          />
 
-              <ProgressIndicator
-                stages={stages}
-                isAnalyzing={isAnalyzing}
-                isSocketConnected={isSocketConnected}
-              />
+          <MetricsGrid
+            metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+            error={!analysisResponse?.success ? analysisResponse?.error : null}
+            errorMessage={errorMessage}
+          />
 
-              <MetricsGrid
-                metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
-                error={!analysisResponse?.success ? analysisResponse?.error : null}
-                errorMessage={errorMessage}
-              />
+          <AstVisualizer
+            astData={analysisResponse?.success ? analysisResponse.ast || null : null}
+            nodeCount={analysisResponse?.node_count}
+            warnings={analysisResponse?.warnings}
+            errorMessage={errorMessage}
+            cached={analysisResponse?.cached}
+            onSelectNode={setHighlightLine}
+          />
 
-              <AstVisualizer
-                astData={analysisResponse?.success ? analysisResponse.ast || null : null}
-                nodeCount={analysisResponse?.node_count}
-                warnings={analysisResponse?.warnings}
-                errorMessage={errorMessage}
-                cached={analysisResponse?.cached}
-                onSelectNode={setHighlightLine}
-              />
-            </section>
-
-            <AnalysisPanel
-              explanations={
-                analysisResponse?.success ? analysisResponse.explanations || null : null
-              }
-              error={!analysisResponse?.success ? analysisResponse?.error : null}
-              errorMessage={errorMessage}
-              onSaveExplanation={handleInitiateSave}
-              isSaved={isSaved}
-              canSave={!!analysisResponse && !!analysisResponse.success}
-            />
-          </main>
-        </>
+          <AnalysisPanel
+            explanations={
+              analysisResponse?.success ? analysisResponse.explanations || null : null
+            }
+            error={!analysisResponse?.success ? analysisResponse?.error : null}
+            errorMessage={errorMessage}
+            onSaveExplanation={handleInitiateSave}
+            isSaved={isSaved}
+            canSave={!!analysisResponse && !!analysisResponse.success}
+          />
+        </main>
       )}
 
       <SaveTitleModal
