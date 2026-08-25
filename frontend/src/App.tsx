@@ -15,6 +15,7 @@ import { useAnalysisSocket } from './hooks/useAnalysisSocket';
 import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
+import { detectFrontendLanguage } from './utils/languageDetector';
 
 const DEFAULT_CODE = `# Mock sample loaded
 def find_duplicates(arr):
@@ -40,6 +41,9 @@ export const App: React.FC = () => {
 
   const [code, setCode] = useState<string>(DEFAULT_CODE);
   const [fileStatus, setFileStatus] = useState<string>('Mock sample loaded');
+  const [uploadedFilename, setUploadedFilename] = useState<string | undefined>(undefined);
+  const [selectedLanguageMode, setSelectedLanguageMode] = useState<string>('auto');
+
   const [isAnalyzingLocal, setIsAnalyzingLocal] = useState<boolean>(false);
   const [analysisState, setAnalysisState] = useState<string>('Ready');
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
@@ -53,6 +57,9 @@ export const App: React.FC = () => {
   const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
 
   const isAnalyzing = isAnalyzingLocal || isSocketAnalyzing;
+
+  // Compute live detection result
+  const detectedLanguage = detectFrontendLanguage(code, uploadedFilename, selectedLanguageMode);
 
   const navigate = useCallback((route: string) => {
     setCurrentRoute(route);
@@ -96,12 +103,14 @@ export const App: React.FC = () => {
   const handleFileUpload = (newCode: string, filename: string) => {
     setCode(newCode);
     setFileStatus(filename);
+    setUploadedFilename(filename);
     setIsSaved(false);
   };
 
   const handleClearCode = () => {
     setCode('');
     setFileStatus('Empty');
+    setUploadedFilename(undefined);
     setAnalysisResponse(null);
     setHighlightLine(null);
     setAnalysisState('Ready');
@@ -111,12 +120,22 @@ export const App: React.FC = () => {
   const handleResetExample = () => {
     setCode(DEFAULT_CODE);
     setFileStatus('Mock sample loaded');
+    setUploadedFilename(undefined);
     setHighlightLine(null);
     setIsSaved(false);
   };
 
+  const handleLoadSnippet = (snippetCode: string, result: AnalyzeResponse) => {
+    setCode(snippetCode);
+    setAnalysisResponse(result);
+    setFileStatus('Loaded from history');
+    setIsSaved(true);
+    navigate('analyzer');
+  };
+
   const runAnalyze = useCallback(() => {
     if (isAnalyzing) return;
+    if (!detectedLanguage.supported) return;
 
     setAnalysisState('Analyzing…');
     setHighlightLine(null);
@@ -143,14 +162,16 @@ export const App: React.FC = () => {
       setAnalysisState('Error');
     };
 
+    const targetLang = selectedLanguageMode === 'auto' ? detectedLanguage.language : selectedLanguageMode;
+
     const handleHttpFallback = async () => {
       setIsAnalyzingLocal(true);
-      const res = await analyzerApi.analyze(code);
+      const res = await analyzerApi.analyze(code, targetLang, uploadedFilename);
       handleSuccess(res);
     };
 
-    analyzeSocket(code, handleSuccess, handleError, handleHttpFallback);
-  }, [code, isAnalyzing, analyzeSocket]);
+    analyzeSocket(code, targetLang, uploadedFilename, handleSuccess, handleError, handleHttpFallback);
+  }, [code, isAnalyzing, analyzeSocket, detectedLanguage, selectedLanguageMode, uploadedFilename]);
 
   const handleInitiateSave = () => {
     if (!user) {
@@ -180,22 +201,15 @@ export const App: React.FC = () => {
         alert('Failed to save analysis.');
       }
     } catch (err) {
-      alert('Network error saving analysis.');
+      console.error('Error saving analysis:', err);
+      alert('Network error while saving analysis.');
+    } finally {
+      setIsSaveModalOpen(false);
     }
   };
 
-  const handleLoadSnippet = (selectedCode: string, res: AnalyzeResponse) => {
-    setCode(selectedCode);
-    setAnalysisResponse(res);
-    setFileStatus('Restored from History');
-    setHighlightLine(null);
-    setAnalysisState('Restored');
-    setIsSaved(true);
-  };
-
-  const errorLine = !analysisResponse?.success ? analysisResponse?.line ?? null : null;
-  const errorMessage = !analysisResponse?.success ? analysisResponse?.message ?? null : null;
-  const defaultSaveTitle = `Analysis — ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const errorMessage = !analysisResponse?.success ? analysisResponse?.message || null : null;
+  const defaultSaveTitle = `${detectedLanguage.displayName} snippet ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
   return (
     <div className="app-shell">
@@ -206,16 +220,16 @@ export const App: React.FC = () => {
         onToggleTheme={toggleTheme}
       />
 
-      {currentRoute === 'login' && <LoginPage onNavigate={navigate} />}
-
-      {currentRoute === 'signup' && <SignupPage onNavigate={navigate} />}
-
       {currentRoute === 'home' && (
         <HomePage
           onNavigate={navigate}
           onLoadSnippet={handleLoadSnippet}
         />
       )}
+
+      {currentRoute === 'login' && <LoginPage onNavigate={navigate} />}
+
+      {currentRoute === 'signup' && <SignupPage onNavigate={navigate} />}
 
       {currentRoute === 'history' && (
         <HistoryPage
@@ -233,6 +247,9 @@ export const App: React.FC = () => {
             onResetExample={handleResetExample}
             onAnalyze={runAnalyze}
             isAnalyzing={isAnalyzing}
+            selectedLanguageMode={selectedLanguageMode}
+            onLanguageModeChange={setSelectedLanguageMode}
+            detectedLanguage={detectedLanguage}
           />
 
           <ProgressIndicator
@@ -241,7 +258,7 @@ export const App: React.FC = () => {
             isSocketConnected={isSocketConnected}
           />
 
-          {/* Row 1: Python Editor (50%) | Analysis Results (50%) Equal Height Grid */}
+          {/* Row 1: Split Desktop 50/50 Grid (Python/Code Editor & Analysis Results) */}
           <div className={`editor-results-row ${isEditorCollapsed ? 'is-collapsed-row' : ''}`}>
             <CodeEditor
               value={code}
@@ -252,11 +269,12 @@ export const App: React.FC = () => {
               theme={theme}
               fileStatus={fileStatus}
               highlightLine={highlightLine}
-              errorLine={errorLine}
+              errorLine={analysisResponse?.line ?? null}
               errorMessage={errorMessage}
               isAnalyzing={isAnalyzing}
               isCollapsed={isEditorCollapsed}
               onToggleCollapse={() => setIsEditorCollapsed((prev) => !prev)}
+              detectedLanguage={detectedLanguage}
             />
 
             <MetricsGrid

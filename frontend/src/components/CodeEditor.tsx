@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import { IconTrash2, IconRotateCcw, IconMaximize2, IconMinimize2 } from './Icons';
+import { ClientDetectionResult } from '../utils/languageDetector';
 
 interface CodeEditorProps {
   value: string;
@@ -16,6 +17,7 @@ interface CodeEditorProps {
   isAnalyzing: boolean;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  detectedLanguage: ClientDetectionResult;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -30,6 +32,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   errorMessage,
   isCollapsed,
   onToggleCollapse,
+  detectedLanguage,
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -123,7 +126,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     if (errorLine && errorLine > 0) {
       const maxCol = model.getLineMaxColumn(errorLine) || 100;
-      monaco.editor.setModelMarkers(model, 'python', [
+      monaco.editor.setModelMarkers(model, detectedLanguage.monacoLanguage || 'python', [
         {
           severity: monaco.MarkerSeverity.Error,
           message: errorMessage || 'Syntax error',
@@ -135,17 +138,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       ]);
       editor.revealLineInCenter(errorLine);
     } else {
-      monaco.editor.setModelMarkers(model, 'python', []);
+      monaco.editor.setModelMarkers(model, detectedLanguage.monacoLanguage || 'python', []);
     }
-  }, [errorLine, errorMessage, isCollapsed]);
+  }, [errorLine, errorMessage, isCollapsed, detectedLanguage]);
 
   return (
     <section className={`workspace-section panel editor-panel-section ${isCollapsed ? 'is-collapsed' : ''}`}>
       <div className="section-header editor-header">
         <div className="editor-header-left">
           <p className="eyebrow">Workspace</p>
-          <h2>Python Editor</h2>
-          {!isCollapsed && <p className="section-subtitle">Write, paste, or upload Python source code.</p>}
+          <h2>{detectedLanguage.displayName} Editor</h2>
+          {!isCollapsed && (
+            <p className="section-subtitle">
+              Write, paste, or upload {detectedLanguage.displayName} source code.
+            </p>
+          )}
         </div>
 
         <div className="section-header-actions">
@@ -176,8 +183,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             type="button"
             className="btn btn-secondary nav-btn-sm collapse-btn"
             onClick={onToggleCollapse}
-            title={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
-            aria-label={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
+            title={isCollapsed ? `Expand ${detectedLanguage.displayName} Editor` : `Collapse ${detectedLanguage.displayName} Editor`}
+            aria-label={isCollapsed ? `Expand ${detectedLanguage.displayName} Editor` : `Collapse ${detectedLanguage.displayName} Editor`}
           >
             {isCollapsed ? (
               <>
@@ -196,7 +203,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <div className="editor-container">
           <Editor
             height="340px"
-            language="python"
+            language={detectedLanguage.monacoLanguage || 'python'}
             theme={theme === 'dark' ? 'vs-dark' : 'vs'}
             value={value}
             onChange={(val) => onChange(val || '')}

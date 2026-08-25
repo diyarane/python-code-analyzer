@@ -2,9 +2,9 @@ import { AnalyzeResponse } from '../types/analyzer';
 
 export const analyzerApi = {
   /**
-   * POST /analyze — returns AST JSON, metrics, and explanations.
+   * POST /analyze — returns AST JSON, metrics, explanations, and detection metadata.
    */
-  async analyze(code: string): Promise<AnalyzeResponse> {
+  async analyze(code: string, language?: string, filename?: string): Promise<AnalyzeResponse> {
     let response: Response;
     try {
       response = await fetch('/analyze', {
@@ -12,7 +12,7 @@ export const analyzerApi = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, language, filename }),
       });
     } catch (err: any) {
       return {
@@ -49,7 +49,6 @@ export const analyzerApi = {
       };
     }
 
-    // Normalize payload keys if needed
     const ast = data.ast ?? data.ast_data ?? data.tree ?? null;
     const metrics = data.metrics ?? data.analysis ?? null;
     const explanations = data.explanations ?? data.explanation ?? null;

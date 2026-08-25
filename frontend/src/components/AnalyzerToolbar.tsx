@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { IconUpload, IconPlay, IconTrash2, IconRotateCcw } from './Icons';
+import { ClientDetectionResult, SUPPORTED_LANGUAGES } from '../utils/languageDetector';
 
 interface AnalyzerToolbarProps {
   fileStatus: string;
@@ -8,6 +9,9 @@ interface AnalyzerToolbarProps {
   onResetExample: () => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
+  selectedLanguageMode: string;
+  onLanguageModeChange: (mode: string) => void;
+  detectedLanguage: ClientDetectionResult;
 }
 
 export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
@@ -16,6 +20,9 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
   onResetExample,
   onAnalyze,
   isAnalyzing,
+  selectedLanguageMode,
+  onLanguageModeChange,
+  detectedLanguage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,21 +41,63 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
     e.target.value = '';
   };
 
+  const isSupported = detectedLanguage.supported;
+
   return (
     <div className="analyzer-header-container">
       <div className="analyzer-header-text">
-        <h1 className="analyzer-page-title">Python Analyzer</h1>
+        <h1 className="analyzer-page-title">
+          {detectedLanguage.displayName} Analyzer
+        </h1>
         <p className="analyzer-page-sub">
           Inspect structure, complexity, dead code, and optimization opportunities.
         </p>
       </div>
 
       <div className="analyzer-header-actions">
+        <div className="language-selector-wrapper">
+          <label htmlFor="language-select-dropdown" className="sr-only">
+            Select Programming Language
+          </label>
+          <select
+            id="language-select-dropdown"
+            className="lang-select-dropdown"
+            value={selectedLanguageMode}
+            onChange={(e) => onLanguageModeChange(e.target.value)}
+            aria-label="Select Programming Language"
+            title="Select Programming Language"
+          >
+            <option value="auto">Auto Detect</option>
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <option key={lang.id} value={lang.id}>
+                {lang.displayName} {lang.supported ? '' : '(Coming Soon)'}
+              </option>
+            ))}
+          </select>
+
+          <span
+            className={`lang-status-badge ${
+              !isSupported ? 'is-unsupported' : detectedLanguage.source === 'manual' ? 'is-manual' : 'is-auto'
+            }`}
+            title={
+              !isSupported
+                ? `AST Analysis for ${detectedLanguage.displayName} is coming soon`
+                : `Language: ${detectedLanguage.displayName} (${detectedLanguage.source})`
+            }
+          >
+            {!isSupported
+              ? `${detectedLanguage.displayName} (Coming Soon)`
+              : selectedLanguageMode === 'auto'
+              ? `Auto: ${detectedLanguage.displayName}`
+              : `Manual: ${detectedLanguage.displayName}`}
+          </span>
+        </div>
+
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept=".py"
+          accept=".py,.js,.jsx,.ts,.tsx,.txt"
           className="file-input"
         />
 
@@ -56,8 +105,8 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
           className="btn btn-secondary nav-btn-sm"
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          title="Upload Python source file"
-          aria-label="Upload Python source file"
+          title="Upload source file"
+          aria-label="Upload source file"
         >
           <IconUpload size={15} /> Upload
         </button>
@@ -76,8 +125,8 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
           className="btn btn-secondary nav-btn-sm"
           type="button"
           onClick={onResetExample}
-          title="Reset to default Python sample"
-          aria-label="Reset to default Python sample"
+          title="Reset to default code sample"
+          aria-label="Reset to default code sample"
         >
           <IconRotateCcw size={15} /> Reset
         </button>
@@ -86,9 +135,17 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
           className="btn btn-primary analyze-cta-btn"
           type="button"
           onClick={onAnalyze}
-          disabled={isAnalyzing}
-          title="Run AST and Complexity Analysis"
-          aria-label="Run AST and Complexity Analysis"
+          disabled={isAnalyzing || !isSupported}
+          title={
+            !isSupported
+              ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
+              : 'Run AST and Complexity Analysis'
+          }
+          aria-label={
+            !isSupported
+              ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
+              : 'Run AST and Complexity Analysis'
+          }
         >
           <IconPlay size={16} /> {isAnalyzing ? 'Analyzing…' : 'Analyze'}
         </button>

@@ -10,7 +10,7 @@ export interface ProgressStage {
 }
 
 const DEFAULT_STAGES: ProgressStage[] = [
-  { id: 'ast', label: 'Parsing Python AST', status: 'pending' },
+  { id: 'ast', label: 'Parsing AST representation', status: 'pending' },
   { id: 'complexity', label: 'Calculating complexity', status: 'pending' },
   { id: 'dead_code', label: 'Detecting dead code & branches', status: 'pending' },
   { id: 'optimization', label: 'Calculating optimization score', status: 'pending' },
@@ -129,6 +129,8 @@ export function useAnalysisSocket() {
   const analyzeCode = useCallback(
     (
       code: string,
+      language: string | undefined,
+      filename: string | undefined,
       onSuccess: (res: AnalyzeResponse) => void,
       onError: (err: { message: string; line?: number | null }) => void,
       onFallback: () => void
@@ -138,7 +140,7 @@ export function useAnalysisSocket() {
       if (socketRef.current && isConnected) {
         setIsAnalyzing(true);
         setStages(DEFAULT_STAGES);
-        socketRef.current.emit('start_analysis', { code });
+        socketRef.current.emit('start_analysis', { code, language, filename });
       } else {
         // Fall back to HTTP API
         onFallback();
