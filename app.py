@@ -1,13 +1,20 @@
-from flask import Flask, jsonify, render_template, request
+import os
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from analyzer.ast_parser import analyze_code
 
+DIST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
 
-app = Flask(__name__)
+if os.path.exists(DIST_DIR):
+    app = Flask(__name__, static_folder=os.path.join(DIST_DIR, "assets"), static_url_path="/assets")
+else:
+    app = Flask(__name__)
 
 
 @app.route("/")
 def index():
+    if os.path.exists(os.path.join(DIST_DIR, "index.html")):
+        return send_from_directory(DIST_DIR, "index.html")
     return render_template("index.html")
 
 
