@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { IconEye, IconEyeOff } from './Icons';
+import { IconEye, IconEyeOff, IconBrandMark } from './Icons';
 
 interface SignupPageProps {
   onNavigate: (route: string) => void;
@@ -63,7 +63,9 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
               onNavigate('home');
             }}
           >
-            <span className="brand-mark">CA</span>
+            <span className="brand-mark">
+              <IconBrandMark size={18} />
+            </span>
             <span>
               <strong>CodeAnalyzer AI</strong>
             </span>

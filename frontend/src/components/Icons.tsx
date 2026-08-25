@@ -5,6 +5,26 @@ interface IconProps {
   size?: number;
 }
 
+export const IconBrandMark: React.FC<IconProps> = ({ className, size = 20 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="7 8 3 12 7 16" />
+    <polyline points="17 8 21 12 17 16" />
+    <circle cx="12" cy="12" r="2" fill="currentColor" />
+    <line x1="12" y1="6" x2="12" y2="10" strokeWidth="1.5" />
+    <line x1="12" y1="14" x2="12" y2="18" strokeWidth="1.5" />
+  </svg>
+);
+
 export const IconInfo: React.FC<IconProps> = ({ className, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="12" cy="12" r="10" />

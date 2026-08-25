@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { IconSun, IconMoon, IconUser, IconLogOut, IconHouse, IconCode2, IconHistory } from './Icons';
+import { IconSun, IconMoon, IconUser, IconLogOut, IconHouse, IconCode2, IconHistory, IconBrandMark } from './Icons';
 
 interface NavbarProps {
   currentRoute: string;
@@ -41,7 +41,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
           aria-label="CodeAnalyzer AI home"
         >
-          <span className="brand-mark">CA</span>
+          <span className="brand-mark">
+            <IconBrandMark size={18} />
+          </span>
           <span className="brand-name">
             <strong>CodeAnalyzer AI</strong>
           </span>

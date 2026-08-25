@@ -171,7 +171,14 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
               )}
             </div>
           </div>
-          <p className="section-subtitle">Explore the structure of the analyzed Python code.</p>
+          <p className="section-subtitle">
+            Explore the structure of the analyzed Python code.
+            {astData && !errorMessage && (
+              <span className="ast-node-count-meta"> · {nodeCount ?? '?'} nodes</span>
+            )}
+            {cached && <span className="ast-cache-meta"> · Cached</span>}
+            {warnings?.length ? <span className="ast-warning-meta"> · Limited depth</span> : null}
+          </p>
         </div>
 
         <div className="section-header-actions">
@@ -204,27 +211,17 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
             >
               <IconScanSearch size={15} /> Fit View
             </button>
+
+            <button
+              className="btn btn-secondary nav-btn-sm expand-ast-btn"
+              type="button"
+              onClick={() => setIsFullscreen((prev) => !prev)}
+              title={isFullscreen ? 'Close Fullscreen (Esc)' : 'Fullscreen AST Workspace'}
+              aria-label={isFullscreen ? 'Close expanded AST' : 'Expand AST'}
+            >
+              {isFullscreen ? <IconMinimize2 size={15} /> : <IconMaximize2 size={15} />}
+            </button>
           </div>
-
-          <span className="status-pill">
-            {errorMessage
-              ? 'AST error'
-              : cached
-              ? 'Cached result'
-              : astData
-              ? `${nodeCount ?? '?'} nodes${warnings?.length ? ' · limited depth' : ''}`
-              : 'Awaiting analysis'}
-          </span>
-
-          <button
-            className="btn btn-secondary nav-btn-sm expand-ast-btn"
-            type="button"
-            onClick={() => setIsFullscreen((prev) => !prev)}
-            title={isFullscreen ? 'Close Fullscreen (Esc)' : 'Fullscreen AST Workspace'}
-            aria-label={isFullscreen ? 'Close expanded AST' : 'Expand AST'}
-          >
-            {isFullscreen ? <IconMinimize2 size={15} /> : <IconMaximize2 size={15} />}
-          </button>
         </div>
       </div>
 
