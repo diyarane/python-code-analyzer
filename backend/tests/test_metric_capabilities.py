@@ -17,10 +17,25 @@ class TestMetricCapabilities(unittest.TestCase):
         self.assertEqual(status_map["dead_code_count"]["status"], "available")
         self.assertIsNotNone(metrics.get("dead_code_count"))
 
+    def test_supported_dead_code_languages_status(self):
+        supported_cases = [
+            ("python", "def foo(): pass\nfoo()"),
+            ("javascript", "export function foo() {}"),
+            ("typescript", "export function foo(x: number) {}"),
+            ("javascript_jsx", "export const App = () => <div>Hello</div>;"),
+            ("typescript_tsx", "export const App: React.FC = () => <div>Hello</div>;"),
+        ]
+        for lang, code in supported_cases:
+            res = analyze_code(code, language=lang)
+            self.assertTrue(res.get("success"), f"Analysis failed for {lang}")
+            metrics = res.get("metrics", {})
+            status_map = metrics.get("metric_status", {})
+            self.assertIn("dead_code_count", status_map, f"Missing dead_code_count status for {lang}")
+            self.assertEqual(status_map["dead_code_count"]["status"], "available", f"Expected available status for {lang}")
+            self.assertIsNotNone(metrics.get("dead_code_count"), f"Expected non-None dead_code_count for {lang}")
+
     def test_unsupported_languages_dead_code_status_and_reason(self):
-        test_cases = [
-            ("javascript", "function foo() {}"),
-            ("typescript", "function foo(x: number) {}"),
+        unsupported_cases = [
             ("java", "public class Main { public static void main(String[] a) {} }"),
             ("c", "#include <stdio.h>\nint main() { return 0; }"),
             ("cpp", "#include <iostream>\nint main() { return 0; }"),
@@ -28,7 +43,7 @@ class TestMetricCapabilities(unittest.TestCase):
             ("rust", "fn main() {}"),
         ]
 
-        for lang, code in test_cases:
+        for lang, code in unsupported_cases:
             res = analyze_code(code, language=lang)
             self.assertTrue(res.get("success"), f"Analysis failed for {lang}")
             metrics = res.get("metrics", {})

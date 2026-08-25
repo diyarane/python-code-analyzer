@@ -28,7 +28,7 @@ class TestMultiLanguageFlow(unittest.TestCase):
             self.assertIn("summary", res.get("explanations", {}))
 
             # Verify dead_code metric contract
-            if expected_lang == "python":
+            if expected_lang in ("python", "javascript", "typescript", "javascript_jsx", "typescript_tsx"):
                 self.assertIsNotNone(res["metrics"].get("dead_code_count"))
             else:
                 self.assertIsNone(res["metrics"].get("dead_code_count"))

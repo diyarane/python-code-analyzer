@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
 from ...explanation_builder import generate_language_aware_explanations
-from ...dead_code import UnsupportedDeadCodeAnalyzer
+from .ts_dead_code import TSDeadCodeAnalyzer
 
 
 class TypeScriptAnalyzer(BaseAnalyzer):
@@ -31,7 +31,8 @@ class TypeScriptAnalyzer(BaseAnalyzer):
         node_count = self._count_nodes(root_node)
         _notify("ast_completed", {"node_count": node_count})
 
-        metrics = self._compute_metrics(root_node, tree.language_id)
+        is_tsx = tree.language_id in ("typescript_tsx", "tsx")
+        metrics = self._compute_metrics(root_node, is_tsx, tree, source_code)
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
             "space_complexity": metrics["space_complexity"]
@@ -60,11 +61,11 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             count += self._count_nodes(child)
         return count
 
-    def _compute_metrics(self, root_node, is_tsx: bool) -> Dict[str, Any]:
+    def _compute_metrics(self, root_node, is_tsx: bool, tree: NormalizedSyntaxTree, source_code: str) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
         lang_display = "TypeScript/TSX" if is_tsx else "TypeScript"
-        dead_res = UnsupportedDeadCodeAnalyzer(lang_display).analyze(root_node, "")
+        dead_res = TSDeadCodeAnalyzer().analyze(tree, source_code)
 
         return engine.compute_control_flow_metrics(
             max_loop_depth=max_loop_depth,

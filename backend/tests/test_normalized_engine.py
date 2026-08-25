@@ -26,45 +26,50 @@ def unused_func():
         self.assertEqual(status_map.get("time_complexity", {}).get("status"), "estimated")
         self.assertEqual(status_map.get("space_complexity", {}).get("status"), "estimated")
 
-    def test_javascript_unsupported_dead_code(self):
+    def test_javascript_measured_dead_code(self):
         js_code = """
-const activeFunc = () => 42;
-const unusedFunc = () => "dead";
+function activeFunc() {
+    return 42;
+    console.log("dead");
+}
 """
         res = analyze_code(js_code, language="javascript")
         self.assertTrue(res.get("success"))
         metrics = res.get("metrics", {})
         
-        # Dead code count MUST be None/null, NOT a fabricated number
-        self.assertIsNone(metrics.get("dead_code_count"))
+        self.assertIsNotNone(metrics.get("dead_code_count"))
+        self.assertGreaterEqual(metrics.get("dead_code_count"), 1)
 
         status_map = metrics.get("metric_status", {})
-        self.assertEqual(status_map.get("dead_code_count", {}).get("status"), "unsupported")
+        self.assertEqual(status_map.get("dead_code_count", {}).get("status"), "available")
         self.assertEqual(status_map.get("time_complexity", {}).get("status"), "estimated")
 
-    def test_typescript_unsupported_dead_code(self):
+    def test_typescript_measured_dead_code(self):
         ts_code = """
 interface User { id: number; }
-function active(u: User): number { return u.id; }
+function active(u: User): number {
+    return u.id;
+    const dead = true;
+}
 """
         res = analyze_code(ts_code, language="typescript")
         self.assertTrue(res.get("success"))
         metrics = res.get("metrics", {})
 
-        # Dead code count MUST be None/null, NOT a fabricated number
-        self.assertIsNone(metrics.get("dead_code_count"))
+        self.assertIsNotNone(metrics.get("dead_code_count"))
+        self.assertGreaterEqual(metrics.get("dead_code_count"), 1)
 
         status_map = metrics.get("metric_status", {})
-        self.assertEqual(status_map.get("dead_code_count", {}).get("status"), "unsupported")
+        self.assertEqual(status_map.get("dead_code_count", {}).get("status"), "available")
         self.assertEqual(status_map.get("time_complexity", {}).get("status"), "estimated")
 
-    def test_no_fabricated_metrics_on_all_languages(self):
+    def test_no_fabricated_metrics_on_unsupported_languages(self):
         codes = [
-            ("python", "x = 1"),
-            ("javascript", "const x = 1;"),
-            ("javascript_jsx", "const App = () => <div />;"),
-            ("typescript", "const x: number = 1;"),
-            ("typescript_tsx", "const App: React.FC = () => <div />;"),
+            ("java", "public class Main { public static void main(String[] a) {} }"),
+            ("c", "int main() { return 0; }"),
+            ("cpp", "int main() { return 0; }"),
+            ("go", "package main\nfunc main() {}"),
+            ("rust", "fn main() {}"),
         ]
 
         for lang, src in codes:
@@ -73,11 +78,10 @@ function active(u: User): number { return u.id; }
             metrics = res.get("metrics", {})
             self.assertIn("metric_status", metrics, f"Missing metric_status for {lang}")
             
-            if lang != "python":
-                self.assertIsNone(
-                    metrics.get("dead_code_count"),
-                    f"Fabricated dead_code_count for {lang}: {metrics.get('dead_code_count')}"
-                )
+            self.assertIsNone(
+                metrics.get("dead_code_count"),
+                f"Fabricated dead_code_count for {lang}: {metrics.get('dead_code_count')}"
+            )
 
 
 if __name__ == "__main__":

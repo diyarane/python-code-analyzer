@@ -23,7 +23,7 @@ const calculateTotal = (items) => {
         self.assertIsNotNone(res.get("ast"))
         self.assertEqual(res.get("metrics", {}).get("time_complexity"), "O(n)")
         self.assertEqual(res.get("metrics", {}).get("max_loop_depth"), 1)
-        self.assertIsNone(res.get("metrics", {}).get("dead_code_count"))
+        self.assertEqual(res.get("metrics", {}).get("dead_code_count"), 0)
 
         # Verify line numbers in AST nodes
         ast_tree = res.get("ast")

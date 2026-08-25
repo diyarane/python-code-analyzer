@@ -46,7 +46,7 @@ export function getMetricExplanation(
           supported: true,
           status: 'available',
           title: 'Dead Code Analysis',
-          copy: `Identifies unreachable statements and unreferenced function or variable definitions in ${lang} source code.`,
+          copy: `Detects statically unreachable statements and selected unused local definitions based on ${lang}'s syntax and control-flow structure.`,
         };
       }
       return {

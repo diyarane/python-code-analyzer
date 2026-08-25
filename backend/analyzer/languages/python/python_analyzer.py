@@ -11,6 +11,7 @@ from ...complexity import analyze_complexity
 from ...explanation_builder import generate_language_aware_explanations
 from ...normalized_metrics import build_metric_status_map
 from ...utils import count_ast_nodes, safe_unparse
+from .py_dead_code import PythonDeadCodeAnalyzer
 
 MAX_VISUAL_NODES = 500
 LARGE_TREE_DEPTH_LIMIT = 3
@@ -37,15 +38,20 @@ class PythonAnalyzer(BaseAnalyzer):
         depth_limit = LARGE_TREE_DEPTH_LIMIT if node_count > MAX_VISUAL_NODES else None
         _notify("ast_completed", {"node_count": node_count})
 
+        dead_analyzer = PythonDeadCodeAnalyzer()
+        dead_res = dead_analyzer.analyze(tree, source_code)
+
         metrics = analyze_complexity(raw_ast)
+        metrics["dead_code_count"] = dead_res.count
+        metrics["dead_code_result"] = dead_res
         metrics["metric_status"] = build_metric_status_map(
             time_complexity=metrics["time_complexity"],
             space_complexity=metrics["space_complexity"],
-            dead_code_count=metrics["dead_code_count"],
+            dead_code_count=dead_res.count,
             optimization_score=metrics["optimization_score"],
             dead_code_supported=True,
             language_display="Python",
-            dead_code_result=metrics.get("dead_code_result"),
+            dead_code_result=dead_res,
         )
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
