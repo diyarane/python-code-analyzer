@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
 from ...explanation_builder import generate_language_aware_explanations
+from ...dead_code import UnsupportedDeadCodeAnalyzer
 
 
 class GoAnalyzer(BaseAnalyzer):
@@ -62,12 +63,12 @@ class GoAnalyzer(BaseAnalyzer):
     def _compute_metrics(self, root_node) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
+        dead_res = UnsupportedDeadCodeAnalyzer("Go").analyze(root_node, "")
 
         return engine.compute_control_flow_metrics(
             max_loop_depth=max_loop_depth,
             max_condition_depth=max_cond_depth,
-            dead_code_count=None,
-            dead_code_supported=False,
+            dead_code_result=dead_res,
             language_display="Go",
         )
 

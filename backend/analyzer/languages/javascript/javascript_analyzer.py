@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
 from ...explanation_builder import generate_language_aware_explanations
+from ...dead_code import UnsupportedDeadCodeAnalyzer
 
 
 class JavaScriptAnalyzer(BaseAnalyzer):
@@ -26,11 +27,11 @@ class JavaScriptAnalyzer(BaseAnalyzer):
 
         ts_tree = tree.raw_tree
         root_node = ts_tree.root_node
-
         node_count = self._count_nodes(root_node)
         _notify("ast_completed", {"node_count": node_count})
 
-        metrics = self._compute_metrics(root_node, tree.language_id)
+        is_jsx = tree.language_id in ("javascript_jsx", "jsx")
+        metrics = self._compute_metrics(root_node, is_jsx)
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],
             "space_complexity": metrics["space_complexity"]
@@ -59,17 +60,17 @@ class JavaScriptAnalyzer(BaseAnalyzer):
             count += self._count_nodes(child)
         return count
 
-    def _compute_metrics(self, root_node, lang_id: str) -> Dict[str, Any]:
+    def _compute_metrics(self, root_node, is_jsx: bool) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
-        lang_title = "JavaScript/JSX" if "jsx" in lang_id else "JavaScript"
+        lang_display = "JavaScript/JSX" if is_jsx else "JavaScript"
+        dead_res = UnsupportedDeadCodeAnalyzer(lang_display).analyze(root_node, "")
 
         return engine.compute_control_flow_metrics(
             max_loop_depth=max_loop_depth,
             max_condition_depth=max_cond_depth,
-            dead_code_count=None,
-            dead_code_supported=False,
-            language_display=lang_title,
+            dead_code_result=dead_res,
+            language_display=lang_display,
         )
 
     def _get_max_loop_depth(self, node, current_depth: int) -> int:

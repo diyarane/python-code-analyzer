@@ -36,6 +36,9 @@ class MetricItem:
         }
 
 
+from .dead_code.models import DeadCodeResult
+
+
 def build_metric_status_map(
     time_complexity: str,
     space_complexity: str,
@@ -43,6 +46,7 @@ def build_metric_status_map(
     optimization_score: int,
     dead_code_supported: bool = True,
     language_display: str = "Python",
+    dead_code_result: Optional[DeadCodeResult] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """Build normalized metric_status dictionary."""
     time_item = MetricItem(
@@ -61,7 +65,20 @@ def build_metric_status_map(
         reason="Evaluated against control flow nesting guidelines.",
     )
 
-    if dead_code_supported and dead_code_count is not None:
+    if dead_code_result is not None:
+        if dead_code_result.supported:
+            dead_item = MetricItem(
+                value=dead_code_result.count,
+                status=MetricStatus.AVAILABLE,
+                reason=f"Measured {dead_code_result.count} dead-code signals in {language_display}.",
+            )
+        else:
+            dead_item = MetricItem(
+                value=None,
+                status=MetricStatus.UNSUPPORTED,
+                reason=dead_code_result.reason or f"Dead-code detection is not currently implemented for {language_display} in this analyzer.",
+            )
+    elif dead_code_supported and dead_code_count is not None:
         dead_item = MetricItem(
             value=dead_code_count,
             status=MetricStatus.AVAILABLE,
@@ -71,7 +88,7 @@ def build_metric_status_map(
         dead_item = MetricItem(
             value=None,
             status=MetricStatus.UNSUPPORTED,
-            reason=f"Dead-code control flow analysis is unsupported for {language_display}.",
+            reason=f"Dead-code detection is not currently implemented for {language_display} in this analyzer.",
         )
 
     return {

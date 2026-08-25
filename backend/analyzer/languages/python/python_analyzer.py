@@ -45,6 +45,7 @@ class PythonAnalyzer(BaseAnalyzer):
             optimization_score=metrics["optimization_score"],
             dead_code_supported=True,
             language_display="Python",
+            dead_code_result=metrics.get("dead_code_result"),
         )
         _notify("complexity_completed", {
             "time_complexity": metrics["time_complexity"],

@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from ...base import BaseAnalyzer, NormalizedSyntaxTree
 from ...engine import engine
 from ...explanation_builder import generate_language_aware_explanations
+from ...dead_code import UnsupportedDeadCodeAnalyzer
 
 
 class TypeScriptAnalyzer(BaseAnalyzer):
@@ -59,17 +60,17 @@ class TypeScriptAnalyzer(BaseAnalyzer):
             count += self._count_nodes(child)
         return count
 
-    def _compute_metrics(self, root_node, lang_id: str) -> Dict[str, Any]:
+    def _compute_metrics(self, root_node, is_tsx: bool) -> Dict[str, Any]:
         max_loop_depth = self._get_max_loop_depth(root_node, current_depth=0)
         max_cond_depth = self._get_max_cond_depth(root_node, current_depth=0)
-        lang_title = "TypeScript/TSX" if "tsx" in lang_id else "TypeScript"
+        lang_display = "TypeScript/TSX" if is_tsx else "TypeScript"
+        dead_res = UnsupportedDeadCodeAnalyzer(lang_display).analyze(root_node, "")
 
         return engine.compute_control_flow_metrics(
             max_loop_depth=max_loop_depth,
             max_condition_depth=max_cond_depth,
-            dead_code_count=None,
-            dead_code_supported=False,
-            language_display=lang_title,
+            dead_code_result=dead_res,
+            language_display=lang_display,
         )
 
     def _get_max_loop_depth(self, node, current_depth: int) -> int:
