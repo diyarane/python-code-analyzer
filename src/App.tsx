@@ -128,6 +128,7 @@ export const App: React.FC = () => {
             nodeCount={analysisResponse?.node_count}
             warnings={analysisResponse?.warnings}
             errorMessage={errorMessage}
+            cached={analysisResponse?.cached}
             onSelectNode={setHighlightLine}
           />
         </section>

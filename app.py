@@ -2,6 +2,7 @@ import os
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from analyzer.ast_parser import analyze_code
+from analyzer.cache import get_cached_analysis, set_cached_analysis
 
 DIST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
 
@@ -30,10 +31,20 @@ def _run_analyze():
                 "error": "EmptyCode",
                 "message": "No Python code was provided.",
                 "line": None,
+                "cached": False,
             }
         ), 400
 
+    cached_result = get_cached_analysis(source_code)
+    if cached_result is not None:
+        return jsonify(cached_result), 200
+
     result = analyze_code(source_code)
+    result["cached"] = False
+
+    if result.get("success"):
+        set_cached_analysis(source_code, result)
+
     status_code = 200 if result.get("success") else 400
     return jsonify(result), status_code
 

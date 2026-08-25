@@ -20,6 +20,7 @@ interface AstVisualizerProps {
   nodeCount?: number;
   warnings?: string[];
   errorMessage?: string | null;
+  cached?: boolean;
   onSelectNode: (line: number | null) => void;
 }
 
@@ -32,6 +33,7 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
   nodeCount,
   warnings,
   errorMessage,
+  cached,
   onSelectNode,
 }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -85,6 +87,8 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
           <span className="status-pill">
             {errorMessage
               ? 'AST error'
+              : cached
+              ? 'Cached result'
               : astData
               ? `${nodeCount ?? '?'} nodes${warnings?.length ? ' · limited depth' : ''}`
               : 'Waiting for code'}

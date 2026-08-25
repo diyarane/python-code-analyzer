@@ -39,6 +39,7 @@ export interface AnalyzeResponse {
   explanations?: Explanations;
   warnings?: string[];
   node_count?: number;
+  cached?: boolean;
   error?: string;
   message?: string;
   line?: number | null;
