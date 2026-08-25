@@ -45,20 +45,81 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
 
   return (
     <div className="analyzer-header-container">
-      <div className="analyzer-header-text">
-        <h1 className="analyzer-page-title">
-          {detectedLanguage.displayName} Analyzer
-        </h1>
-        <p className="analyzer-page-sub">
-          Inspect structure, complexity, dead code, and optimization opportunities.
-        </p>
+      {/* Top Row: Page Title & Action Buttons */}
+      <div className="analyzer-header-top-row">
+        <div className="analyzer-header-text">
+          <h1 className="analyzer-page-title">
+            {detectedLanguage.displayName} Analyzer
+          </h1>
+          <p className="analyzer-page-sub">
+            Inspect structure, complexity, dead code, and optimization opportunities.
+          </p>
+        </div>
+
+        <div className="analyzer-action-button-group">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.cpp,.go,.rs,.txt"
+            className="file-input"
+          />
+
+          <button
+            className="btn btn-secondary nav-btn-sm"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload source file"
+            aria-label="Upload source file"
+          >
+            <IconUpload size={15} /> Upload
+          </button>
+
+          <button
+            className="btn btn-secondary nav-btn-sm"
+            type="button"
+            onClick={onClear}
+            title="Clear editor code"
+            aria-label="Clear editor code"
+          >
+            <IconTrash2 size={15} /> Clear
+          </button>
+
+          <button
+            className="btn btn-secondary nav-btn-sm"
+            type="button"
+            onClick={onResetExample}
+            title="Reset to default code sample"
+            aria-label="Reset to default code sample"
+          >
+            <IconRotateCcw size={15} /> Reset
+          </button>
+
+          <button
+            className="btn btn-primary analyze-cta-btn"
+            type="button"
+            onClick={onAnalyze}
+            disabled={isAnalyzing || !isSupported}
+            title={
+              !isSupported
+                ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
+                : 'Run AST and Complexity Analysis'
+            }
+            aria-label={
+              !isSupported
+                ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
+                : 'Run AST and Complexity Analysis'
+            }
+          >
+            <IconPlay size={16} /> {isAnalyzing ? 'Analyzing…' : 'Analyze'}
+          </button>
+        </div>
       </div>
 
-      <div className="analyzer-header-actions">
-        <div className="language-selector-wrapper">
-          <label htmlFor="language-select-dropdown" className="sr-only">
-            Select Programming Language
-          </label>
+      {/* Bottom Row: Language Selector & Auto/Manual Status Badge */}
+      <div className="language-selector-section-row">
+        <div className="language-selector-control-group">
+          <span className="language-selector-label">Programming Language:</span>
           <select
             id="language-select-dropdown"
             className="lang-select-dropdown"
@@ -66,6 +127,7 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
             onChange={(e) => onLanguageModeChange(e.target.value)}
             aria-label="Select Programming Language"
             title="Select Programming Language"
+            style={{ minWidth: '180px' }}
           >
             <option value="auto">Auto Detect</option>
             {SUPPORTED_LANGUAGES.map((lang) => (
@@ -92,63 +154,6 @@ export const AnalyzerToolbar: React.FC<AnalyzerToolbarProps> = ({
               : `Manual: ${detectedLanguage.displayName}`}
           </span>
         </div>
-
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept=".py,.js,.jsx,.ts,.tsx,.txt"
-          className="file-input"
-        />
-
-        <button
-          className="btn btn-secondary nav-btn-sm"
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          title="Upload source file"
-          aria-label="Upload source file"
-        >
-          <IconUpload size={15} /> Upload
-        </button>
-
-        <button
-          className="btn btn-secondary nav-btn-sm"
-          type="button"
-          onClick={onClear}
-          title="Clear editor code"
-          aria-label="Clear editor code"
-        >
-          <IconTrash2 size={15} /> Clear
-        </button>
-
-        <button
-          className="btn btn-secondary nav-btn-sm"
-          type="button"
-          onClick={onResetExample}
-          title="Reset to default code sample"
-          aria-label="Reset to default code sample"
-        >
-          <IconRotateCcw size={15} /> Reset
-        </button>
-
-        <button
-          className="btn btn-primary analyze-cta-btn"
-          type="button"
-          onClick={onAnalyze}
-          disabled={isAnalyzing || !isSupported}
-          title={
-            !isSupported
-              ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
-              : 'Run AST and Complexity Analysis'
-          }
-          aria-label={
-            !isSupported
-              ? `AST analysis for ${detectedLanguage.displayName} is coming soon`
-              : 'Run AST and Complexity Analysis'
-          }
-        >
-          <IconPlay size={16} /> {isAnalyzing ? 'Analyzing…' : 'Analyze'}
-        </button>
       </div>
     </div>
   );

@@ -38,6 +38,17 @@ const nodeTypes = {
   astNode: AstNodeCustom,
 };
 
+export function countAstNodes(astNode: ASTNode | null): number {
+  if (!astNode) return 0;
+  let count = 1;
+  if (Array.isArray(astNode.children)) {
+    for (const child of astNode.children) {
+      count += countAstNodes(child);
+    }
+  }
+  return count;
+}
+
 const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
   astData,
   nodeCount,
@@ -56,6 +67,8 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedNodeData, setSelectedNodeData] = useState<any>(null);
 
+  const calculatedNodeCount = astData ? countAstNodes(astData) : (nodeCount ?? 0);
+
   const handleZoomIn = () => zoomIn({ duration: 250 });
   const handleZoomOut = () => zoomOut({ duration: 250 });
   const handleResetZoom = () => fitView({ padding: 0.2, duration: 400 });
@@ -73,13 +86,23 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
       setNodes(newNodes);
       setEdges(newEdges);
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         fitView({ padding: 0.2, duration: 400 });
-      }, 50);
+      }, 100);
+
+      return () => clearTimeout(timer);
     } catch (err) {
       console.error('[AstVisualizer] Error setting up React Flow graph:', err);
     }
   }, [astData, errorMessage, setNodes, setEdges, fitView]);
+
+  // Recalculate fit view when fullscreen overlay state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.2, duration: 300 });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isFullscreen, fitView]);
 
   // Keyboard Escape key handler to exit Fullscreen Mode
   useEffect(() => {
@@ -140,12 +163,12 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
       <div className="section-header">
         <div className="ast-header-title-group">
           <p className="eyebrow">Compiler View</p>
-          <div className="ast-title-with-info">
+          <div className="ast-title-with-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h2>Interactive AST</h2>
             <div className="info-popover-wrapper">
               <button
                 type="button"
-                className="icon-btn info-trigger-btn"
+                className="unboxed-info-btn"
                 aria-label="AST information"
                 title="AST information"
                 onClick={() => setShowInfoPopover((prev) => !prev)}
@@ -156,17 +179,11 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
               </button>
 
               {showInfoPopover && (
-                <div className="info-popover-card">
+                <div className="info-popover-card" style={{ width: '280px' }}>
                   <div className="popover-section">
                     <h4>What is an AST?</h4>
                     <p>
-                      An Abstract Syntax Tree (AST) represents your {languageDisplayName} code as a structured tree of statements, expressions, functions, loops, and other language constructs.
-                    </p>
-                  </div>
-                  <div className="popover-section">
-                    <h4>What does it help with?</h4>
-                    <p>
-                      It lets you visually explore how your code is structured and see where complexity, branches, loops, and other constructs occur.
+                      An Abstract Syntax Tree (AST) represents the structure of your {languageDisplayName} code as connected nodes. It helps the analyzer inspect functions, loops, conditions, expressions, and other code constructs.
                     </p>
                   </div>
                 </div>
@@ -176,7 +193,7 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
           <p className="section-subtitle">
             Explore the structure of the analyzed {languageDisplayName} code.
             {astData && !errorMessage && (
-              <span className="ast-node-count-meta"> · {nodeCount ?? '?'} nodes</span>
+              <span className="ast-node-count-meta"> · {calculatedNodeCount} nodes</span>
             )}
             {cached && <span className="ast-cache-meta"> · Cached</span>}
             {warnings?.length ? <span className="ast-warning-meta"> · Limited depth</span> : null}
@@ -234,44 +251,47 @@ const AstFlowCanvas: React.FC<AstVisualizerProps> = ({
         </div>
       </div>
 
-      <div className="ast-canvas-container">
+      {/* Styled AST Workspace Body & React Flow Container */}
+      <div className="ast-workspace-body">
         {errorMessage ? (
-          <div className="ast-empty-state error">
+          <div className="ast-empty-state error" style={{ width: '100%', height: '100%' }}>
             <p>{errorMessage}</p>
           </div>
         ) : !astData ? (
-          <div className="ast-empty-state">
+          <div className="ast-empty-state" style={{ width: '100%', height: '100%' }}>
             <p>No AST data available. Run analysis to render graph.</p>
           </div>
         ) : (
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onNodeClick={handleNodeClick}
-            nodeTypes={nodeTypes}
-            minZoom={0.1}
-            maxZoom={2.5}
-            fitViewOptions={{ padding: 0.2 }}
-            proOptions={{ hideAttribution: true }}
-          >
-            <Background color="rgba(142, 233, 255, 0.08)" gap={20} size={1} />
-            <MiniMap
-              nodeColor={(node) => {
-                const color = node.data?.complexity?.color;
-                if (color === 'red') return '#ef4444';
-                if (color === 'yellow') return '#f59e0b';
-                return '#10b981';
-              }}
-              maskColor="rgba(15, 23, 42, 0.7)"
-              style={{
-                backgroundColor: 'var(--surface-card)',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-              }}
-            />
-          </ReactFlow>
+          <div className="ast-container">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={handleNodeClick}
+              nodeTypes={nodeTypes}
+              minZoom={0.1}
+              maxZoom={2.5}
+              fitViewOptions={{ padding: 0.2 }}
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background color="rgba(142, 233, 255, 0.08)" gap={20} size={1} />
+              <MiniMap
+                nodeColor={(node) => {
+                  const color = node.data?.complexity?.color;
+                  if (color === 'red') return '#ef4444';
+                  if (color === 'yellow') return '#f59e0b';
+                  return '#10b981';
+                }}
+                maskColor="rgba(15, 23, 42, 0.7)"
+                style={{
+                  backgroundColor: 'var(--surface-card)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                }}
+              />
+            </ReactFlow>
+          </div>
         )}
 
         {/* Selected Node Details Drawer / Popover Inspector */}
