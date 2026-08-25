@@ -33,6 +33,8 @@ def handle_start_analysis(data):
     """Handle real-time analysis requests over WebSockets."""
     data = data or {}
     source_code = data.get("code", "")
+    language = data.get("language")
+    filename = data.get("filename")
 
     def send_progress(stage: str, payload: dict | None = None):
         emit("analysis_progress", {"stage": stage, "data": payload or {}})
@@ -43,7 +45,7 @@ def handle_start_analysis(data):
         err_res = {
             "success": False,
             "error": "EmptyCode",
-            "message": "No Python code was provided.",
+            "message": "No code was provided.",
             "line": None,
             "cached": False,
         }
@@ -51,7 +53,8 @@ def handle_start_analysis(data):
         return
 
     send_progress("cache_check")
-    cached_result = get_cached_analysis(source_code)
+    cache_key = f"{language or 'auto'}:{filename or ''}:{source_code}"
+    cached_result = get_cached_analysis(cache_key)
 
     if cached_result is not None:
         send_progress("cache_hit")
@@ -61,11 +64,16 @@ def handle_start_analysis(data):
     def on_progress_step(stage: str, step_data: dict):
         send_progress(stage, step_data)
 
-    result = analyze_code(source_code, progress_callback=on_progress_step)
+    result = analyze_code(
+        source_code,
+        progress_callback=on_progress_step,
+        language=language,
+        filename=filename,
+    )
     result["cached"] = False
 
     if result.get("success"):
-        set_cached_analysis(source_code, result)
+        set_cached_analysis(cache_key, result)
         send_progress("analysis_completed", result)
     else:
         send_progress("analysis_error", result)

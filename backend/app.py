@@ -52,27 +52,30 @@ def _run_analyze():
     """Shared handler for /analyze and legacy /analyze-ast (HTTP fallback)."""
     data = request.get_json(silent=True) or {}
     source_code = data.get("code", "")
+    language = data.get("language")
+    filename = data.get("filename")
 
     if not source_code.strip():
         return jsonify(
             {
                 "success": False,
                 "error": "EmptyCode",
-                "message": "No Python code was provided.",
+                "message": "No code was provided.",
                 "line": None,
                 "cached": False,
             }
         ), 400
 
-    cached_result = get_cached_analysis(source_code)
+    cache_key = f"{language or 'auto'}:{filename or ''}:{source_code}"
+    cached_result = get_cached_analysis(cache_key)
     if cached_result is not None:
         return jsonify(cached_result), 200
 
-    result = analyze_code(source_code)
+    result = analyze_code(source_code, language=language, filename=filename)
     result["cached"] = False
 
     if result.get("success"):
-        set_cached_analysis(source_code, result)
+        set_cached_analysis(cache_key, result)
 
     status_code = 200 if result.get("success") else 400
     return jsonify(result), status_code
