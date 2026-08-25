@@ -7,12 +7,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from .base import BaseLanguage
 from .languages.python.python_language import PythonLanguage
-from .languages.stubs import (
-    JavaScriptLanguage,
-    JavaScriptJSXLanguage,
-    TypeScriptLanguage,
-    TypeScriptTSXLanguage,
-)
+from .languages.javascript import JavaScriptLanguage, JavaScriptJSXLanguage
+from .languages.typescript import TypeScriptLanguage, TypeScriptTSXLanguage
 
 
 class LanguageRegistry:
@@ -22,7 +18,7 @@ class LanguageRegistry:
         self._languages: Dict[str, BaseLanguage] = {}
         self._extension_map: Dict[str, BaseLanguage] = {}
 
-        # Register supported & stub languages
+        # Register language adapters
         self.register(PythonLanguage())
         self.register(JavaScriptLanguage())
         self.register(JavaScriptJSXLanguage())

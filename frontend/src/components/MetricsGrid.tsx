@@ -14,7 +14,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
         <div>
           <p className="eyebrow">Static Intelligence</p>
           <h2>Analysis Results</h2>
-          <p className="section-subtitle">Metrics calculated from Python control flow, AST structure, and loop depth.</p>
+          <p className="section-subtitle">Metrics calculated from AST structure, loop depth, and control flow.</p>
         </div>
       </div>
 
@@ -47,7 +47,11 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics, error, errorM
 
             <article className="metric-card">
               <span className="metric-label">Dead Code</span>
-              <strong className="metric-value">{metrics.dead_code_count ?? 0}</strong>
+              <strong className="metric-value">
+                {metrics.dead_code_count !== null && metrics.dead_code_count !== undefined
+                  ? metrics.dead_code_count
+                  : 'N/A'}
+              </strong>
               <p className="metric-copy">Unreachable statements and unreferenced definitions.</p>
             </article>
 

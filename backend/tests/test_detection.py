@@ -22,7 +22,7 @@ class TestLanguageDetection(unittest.TestCase):
         self.assertEqual(res.display_name, "JavaScript")
         self.assertEqual(res.source, "extension")
         self.assertEqual(res.confidence, 0.95)
-        self.assertFalse(res.supported)
+        self.assertTrue(res.supported)
 
     def test_typescript_file_detection(self):
         res_ts = detector.detect(source_code="const x: number = 5;", filename="index.ts")
@@ -30,12 +30,14 @@ class TestLanguageDetection(unittest.TestCase):
         self.assertEqual(res_ts.display_name, "TypeScript")
         self.assertEqual(res_ts.source, "extension")
         self.assertEqual(res_ts.confidence, 0.95)
+        self.assertTrue(res_ts.supported)
 
         res_tsx = detector.detect(source_code="const Component: React.FC = () => <div />;", filename="Widget.tsx")
         self.assertEqual(res_tsx.language, "typescript_tsx")
         self.assertEqual(res_tsx.display_name, "TypeScript/TSX")
         self.assertEqual(res_tsx.source, "extension")
         self.assertEqual(res_tsx.confidence, 0.95)
+        self.assertTrue(res_tsx.supported)
 
     def test_unknown_extension(self):
         res = detector.detect(source_code="some random text", filename="file.unknown")
@@ -72,7 +74,7 @@ export default calculateTotal;
         self.assertEqual(res.language, "javascript")
         self.assertEqual(res.source, "content")
         self.assertGreaterEqual(res.confidence, 0.65)
-        self.assertFalse(res.supported)
+        self.assertTrue(res.supported)
 
     def test_ambiguous_unknown_code(self):
         ambiguous_code = "123456789"
@@ -90,6 +92,7 @@ export default calculateTotal;
         self.assertEqual(res.display_name, "JavaScript")
         self.assertEqual(res.source, "manual")
         self.assertEqual(res.confidence, 1.0)
+        self.assertTrue(res.supported)
 
         # Explicit request 'python' when filename is app.js
         res_py = detector.detect(source_code="console.log('hi')", filename="app.js", requested_language="python")
