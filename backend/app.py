@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analyzer.ast_parser import analyze_code
 from analyzer.cache import get_cached_analysis, set_cached_analysis
+from socket_events import init_socketio, socketio
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist"))
 
@@ -14,6 +15,8 @@ if os.path.exists(DIST_DIR):
     app = Flask(__name__, static_folder=os.path.join(DIST_DIR, "assets"), static_url_path="/assets")
 else:
     app = Flask(__name__)
+
+init_socketio(app)
 
 
 @app.route("/")
@@ -24,7 +27,7 @@ def index():
 
 
 def _run_analyze():
-    """Shared handler for /analyze and legacy /analyze-ast."""
+    """Shared handler for /analyze and legacy /analyze-ast (HTTP fallback)."""
     data = request.get_json(silent=True) or {}
     source_code = data.get("code", "")
 
@@ -66,4 +69,4 @@ def analyze_ast():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    socketio.run(app, host="127.0.0.1", port=5000, debug=True)

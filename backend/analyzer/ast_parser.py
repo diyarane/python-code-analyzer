@@ -17,39 +17,62 @@ MAX_VISUAL_NODES = 500
 LARGE_TREE_DEPTH_LIMIT = 3
 
 
-def analyze_code(source_code: str) -> dict:
+def analyze_code(source_code: str, progress_callback=None) -> dict:
     """
-    Main entry for POST /analyze.
+    Main entry for POST /analyze and WebSocket execution.
 
     Returns a dict suitable for jsonify(), with keys:
     success, ast (if success), metrics, explanations, warnings, node_count
     or success=False with error, message, line on failure.
     """
+    def _notify(stage: str, data: dict | None = None):
+        if progress_callback:
+            try:
+                progress_callback(stage, data or {})
+            except Exception:
+                pass
+
+    _notify("ast_started")
+
     try:
         tree = ast.parse(source_code)
     except SyntaxError as error:
-        return {
+        err_res = {
             "success": False,
             "error": "SyntaxError",
             "message": f"{error.msg} at line {error.lineno}",
             "line": error.lineno,
         }
+        _notify("analysis_error", err_res)
+        return err_res
     except Exception as error:
         # Never leak raw tracebacks to the client; log server-side.
         traceback.print_exc()
-        return {
+        err_res = {
             "success": False,
             "error": type(error).__name__,
             "message": "Unexpected error while parsing code.",
             "line": None,
         }
+        _notify("analysis_error", err_res)
+        return err_res
 
     node_count = count_ast_nodes(tree)
     depth_limit = LARGE_TREE_DEPTH_LIMIT if node_count > MAX_VISUAL_NODES else None
+    _notify("ast_completed", {"node_count": node_count})
 
     metrics = analyze_complexity(tree)
+    _notify("complexity_completed", {
+        "time_complexity": metrics["time_complexity"],
+        "space_complexity": metrics["space_complexity"]
+    })
+    _notify("dead_code_completed", {"dead_code_count": metrics["dead_code_count"]})
+    _notify("optimization_completed", {"optimization_score": metrics["optimization_score"]})
+
+    _notify("ai_analysis_started")
     ast_json = ast_to_json(tree, depth_limit=depth_limit)
     explanations = build_explanations(metrics)
+    _notify("ai_analysis_completed")
 
     return {
         "success": True,

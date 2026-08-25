@@ -822,6 +822,89 @@ h2 {
     0 0 14px var(--glow);
 }
 
+/* Progress Indicator */
+.progress-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.socket-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(142, 233, 255, 0.12);
+  color: var(--primary-strong);
+  border: 1px solid rgba(142, 233, 255, 0.25);
+}
+
+.progress-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.progress-icon {
+  font-family: monospace;
+  font-weight: bold;
+  width: 16px;
+  text-align: center;
+}
+
+.status-pending {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.status-running {
+  color: var(--primary-strong);
+  font-weight: 600;
+  animation: pulse-glow 1.5s infinite alternate;
+}
+
+.status-completed {
+  color: var(--success);
+}
+
+.status-failed {
+  color: var(--danger);
+}
+
+.progress-detail {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+@keyframes pulse-glow {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 @media (max-width: 1180px) and (min-width: 768px) {
   .dashboard {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

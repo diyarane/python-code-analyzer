@@ -4,6 +4,8 @@ import { CodeEditor } from './components/CodeEditor';
 import { MetricsGrid } from './components/MetricsGrid';
 import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
+import { ProgressIndicator } from './components/ProgressIndicator';
+import { useAnalysisSocket } from './hooks/useAnalysisSocket';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
 
@@ -22,10 +24,14 @@ export const App: React.FC = () => {
 
   const [code, setCode] = useState<string>(DEFAULT_CODE);
   const [fileStatus, setFileStatus] = useState<string>('Mock sample loaded');
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isAnalyzingLocal, setIsAnalyzingLocal] = useState<boolean>(false);
   const [analysisState, setAnalysisState] = useState<string>('Ready');
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
+
+  const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
+
+  const isAnalyzing = isAnalyzingLocal || isSocketAnalyzing;
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -55,23 +61,41 @@ export const App: React.FC = () => {
     setHighlightLine(null);
   };
 
-  const runAnalyze = useCallback(async () => {
+  const runAnalyze = useCallback(() => {
     if (isAnalyzing) return;
 
-    setIsAnalyzing(true);
     setAnalysisState('Analyzing…');
     setHighlightLine(null);
 
-    const res = await analyzerApi.analyze(code);
-    setAnalysisResponse(res);
-    setIsAnalyzing(false);
+    const handleSuccess = (res: AnalyzeResponse) => {
+      setAnalysisResponse(res);
+      setIsAnalyzingLocal(false);
+      if (res.success) {
+        setAnalysisState('Ready');
+      } else {
+        setAnalysisState('Error');
+      }
+    };
 
-    if (res.success) {
-      setAnalysisState('Ready');
-    } else {
+    const handleError = (err: { message: string; line?: number | null }) => {
+      setAnalysisResponse({
+        success: false,
+        error: 'AnalysisError',
+        message: err.message,
+        line: err.line,
+      });
+      setIsAnalyzingLocal(false);
       setAnalysisState('Error');
-    }
-  }, [code, isAnalyzing]);
+    };
+
+    const handleHttpFallback = async () => {
+      setIsAnalyzingLocal(true);
+      const res = await analyzerApi.analyze(code);
+      handleSuccess(res);
+    };
+
+    analyzeSocket(code, handleSuccess, handleError, handleHttpFallback);
+  }, [code, isAnalyzing, analyzeSocket]);
 
   const errorLine = !analysisResponse?.success ? analysisResponse?.line ?? null : null;
   const errorMessage = !analysisResponse?.success ? analysisResponse?.message ?? null : null;
@@ -116,6 +140,12 @@ export const App: React.FC = () => {
               {analysisState}
             </span>
           </div>
+
+          <ProgressIndicator
+            stages={stages}
+            isAnalyzing={isAnalyzing}
+            isSocketConnected={isSocketConnected}
+          />
 
           <MetricsGrid
             metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}

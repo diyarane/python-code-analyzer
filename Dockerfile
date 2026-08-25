@@ -10,7 +10,7 @@ COPY frontend/src ./src
 
 RUN npm run build
 
-# Stage 2: Serve application using Python 3.11 & Gunicorn
+# Stage 2: Serve application using Python 3.11 & Gunicorn + Gevent WebSocket
 FROM python:3.11-slim
 WORKDIR /app/backend
 
@@ -30,4 +30,4 @@ COPY backend ./
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app:app"]
+CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "--bind", "0.0.0.0:5000", "app:app"]
