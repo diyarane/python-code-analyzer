@@ -1,10 +1,14 @@
 import os
 import sys
+from datetime import timedelta
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 # Ensure backend directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from extensions import db, migrate
+from auth import auth_bp
+from history import history_bp
 from analyzer.ast_parser import analyze_code
 from analyzer.cache import get_cached_analysis, set_cached_analysis
 from socket_events import init_socketio, socketio
@@ -16,7 +20,32 @@ if os.path.exists(DIST_DIR):
 else:
     app = Flask(__name__)
 
+# Database & Secret Key Configuration
+db_url = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(os.path.dirname(os.path.abspath(__file__)), "codeanalyzer.db"))
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "codeanalyzer-secret-key-change-me")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+# Initialize extensions
+db.init_app(app)
+migrate.init_app(app, db)
 init_socketio(app)
+
+# Register Blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(history_bp)
+
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        print("[App] Database auto-create warning:", e)
 
 
 @app.route("/")

@@ -1,41 +1,15 @@
 # CodeAnalyzer AI
 
-Static intelligence platform providing AST graph visualization, time/space complexity analysis, dead code detection, and optimization scoring for Python code.
+Static intelligence platform providing AST graph visualization, time/space complexity analysis, dead code detection, optimization scoring, user authentication, and analysis history for Python code.
 
 ---
 
-## Repository Structure
+## Technical Stack
 
-```
-codeanalyzer/
-├── backend/
-│   ├── app.py                  # Active Flask application entry point
-│   ├── analyzer/               # Python AST analyzer & Redis cache
-│   │   ├── __init__.py
-│   │   ├── ast_parser.py
-│   │   ├── cache.py
-│   │   ├── complexity.py
-│   │   └── utils.py
-│   └── tests/                  # Backend test suite & samples
-│       ├── comprehensive_test.py
-│       ├── sample.py
-│       └── test.py
-│
-├── frontend/
-│   ├── src/                    # React 18 + TypeScript 5 SPA
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-│
-├── Dockerfile                  # Multi-stage build (Node.js -> Python runtime)
-├── docker-compose.yml          # Container orchestration (Flask + Redis)
-├── .dockerignore
-├── .gitignore
-├── .env.example
-├── README.md
-└── requirements.txt
-```
+- **Frontend**: React 18, TypeScript 5, Vite, Monaco Editor (`@monaco-editor/react`), React Flow (`reactflow`), Socket.IO client (`socket.io-client`).
+- **Backend**: Python 3.11, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-SocketIO, Gunicorn.
+- **Database & Cache**: PostgreSQL 16, Redis 7.
+- **Containerization**: Multi-stage Docker, Docker Compose.
 
 ---
 
@@ -61,7 +35,13 @@ python backend/app.py
 ```
 The Flask backend will start on `http://127.0.0.1:5000`.
 
-#### Frontend Setup
+#### Database Migrations (Flask-Migrate)
+```bash
+# Initialize / update database tables
+python -m flask db upgrade --directory backend/migrations
+```
+
+#### Frontend Development Server
 ```bash
 cd frontend
 
@@ -77,9 +57,11 @@ npm run dev
 
 ---
 
-## Running with Docker
+## Running with Docker & PostgreSQL
 
 ### Build and Start Containers
+
+To build and run the entire application (Flask, React, PostgreSQL, Redis) inside Docker:
 
 ```bash
 docker compose up -d --build
@@ -112,3 +94,7 @@ docker compose down
 | `REDIS_HOST` | Redis cache hostname | `localhost` |
 | `REDIS_PORT` | Redis cache port | `6379` |
 | `REDIS_TTL` | Cache time-to-live (seconds) | `3600` |
+| `DATABASE_URL` | PostgreSQL connection URL | `postgresql://codeanalyzer:codeanalyzer_pass@db:5432/codeanalyzer_db` |
+| `POSTGRES_USER` | PostgreSQL username | `codeanalyzer` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `codeanalyzer_pass` |
+| `POSTGRES_DB` | PostgreSQL database name | `codeanalyzer_db` |

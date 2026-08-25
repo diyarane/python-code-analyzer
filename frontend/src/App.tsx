@@ -5,6 +5,8 @@ import { MetricsGrid } from './components/MetricsGrid';
 import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { ProgressIndicator } from './components/ProgressIndicator';
+import { AuthModal } from './components/AuthModal';
+import { HistoryPanel } from './components/HistoryPanel';
 import { useAnalysisSocket } from './hooks/useAnalysisSocket';
 import { analyzerApi } from './services/analyzerApi';
 import { AnalyzeResponse } from './types/analyzer';
@@ -28,6 +30,11 @@ export const App: React.FC = () => {
   const [analysisState, setAnalysisState] = useState<string>('Ready');
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
+
+  // Auth & History State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { isConnected: isSocketConnected, isAnalyzing: isSocketAnalyzing, stages, analyzeCode: analyzeSocket } = useAnalysisSocket();
 
@@ -97,6 +104,41 @@ export const App: React.FC = () => {
     analyzeSocket(code, handleSuccess, handleError, handleHttpFallback);
   }, [code, isAnalyzing, analyzeSocket]);
 
+  const handleOpenAuthModal = (mode: 'login' | 'signup') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleSaveAnalysis = async () => {
+    if (!analysisResponse || !analysisResponse.success) return;
+    try {
+      const resp = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          source_code: code,
+          analysis_result: analysisResponse,
+        }),
+      });
+      if (resp.ok) {
+        alert('Analysis saved successfully to your history!');
+      } else {
+        alert('Failed to save analysis.');
+      }
+    } catch (err) {
+      alert('Network error saving analysis.');
+    }
+  };
+
+  const handleSelectRecord = (selectedCode: string, res: AnalyzeResponse) => {
+    setCode(selectedCode);
+    setAnalysisResponse(res);
+    setFileStatus('Loaded from history');
+    setHighlightLine(null);
+    setAnalysisState('Ready');
+  };
+
   const errorLine = !analysisResponse?.success ? analysisResponse?.line ?? null : null;
   const errorMessage = !analysisResponse?.success ? analysisResponse?.message ?? null : null;
 
@@ -107,6 +149,10 @@ export const App: React.FC = () => {
         onToggleTheme={toggleTheme}
         onAnalyze={runAnalyze}
         onFileUpload={handleFileUpload}
+        onOpenAuthModal={handleOpenAuthModal}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onSaveAnalysis={handleSaveAnalysis}
+        canSave={!!analysisResponse && !!analysisResponse.success}
         isAnalyzing={isAnalyzing}
         fileStatus={fileStatus}
       />
@@ -171,6 +217,18 @@ export const App: React.FC = () => {
           errorMessage={errorMessage}
         />
       </main>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
+
+      <HistoryPanel
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onSelectRecord={handleSelectRecord}
+      />
     </div>
   );
 };
