@@ -25,7 +25,7 @@ class TestAiExplanations(unittest.TestCase):
         self.assertTrue(res.get("success"))
         exp = res.get("explanations", {})
         self.assertIn("JavaScript", exp["summary"])
-        self.assertIn("unsupported for javascript", exp["summary"].lower())
+        self.assertIn("dead-code analysis", exp["summary"].lower())
         self.assertNotIn("python", exp["summary"].lower())
 
     def test_typescript_ai_explanation(self):
@@ -35,7 +35,7 @@ class TestAiExplanations(unittest.TestCase):
         exp = res.get("explanations", {})
         self.assertIn("TypeScript", exp["summary"])
         self.assertIn("interface", exp["summary"].lower())
-        self.assertIn("unsupported for typescript", exp["summary"].lower())
+        self.assertIn("dead-code analysis", exp["summary"].lower())
         self.assertNotIn("python", exp["summary"].lower())
 
     def test_tsx_ai_explanation(self):
@@ -44,7 +44,7 @@ class TestAiExplanations(unittest.TestCase):
         self.assertTrue(res.get("success"))
         exp = res.get("explanations", {})
         self.assertIn("TypeScript/TSX", exp["summary"])
-        self.assertIn("unsupported for typescript", exp["summary"].lower())
+        self.assertIn("dead-code analysis", exp["summary"].lower())
 
 
 if __name__ == "__main__":

@@ -46,7 +46,7 @@ export function getMetricExplanation(
           supported: true,
           status: 'available',
           title: 'Dead Code Analysis',
-          copy: 'Dead-code analysis detects statically unreachable code and selected unused local definitions.',
+          copy: 'Detects statically unreachable statements and selected unused local definitions using the current language analyzer.',
         };
       }
       return {
