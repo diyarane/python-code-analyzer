@@ -35,6 +35,15 @@ class PythonLanguage(BaseLanguage):
     def analyzer(self) -> BaseAnalyzer:
         return self._analyzer
 
-    def detect_heuristics(self, source_code: str) -> bool:
-        keywords = ["def ", "import ", "from ", "class ", "elif ", "self.", "print("]
-        return any(kw in source_code for kw in keywords)
+    @property
+    def is_supported(self) -> bool:
+        return True
+
+    def detect_heuristics(self, source_code: str) -> float:
+        keywords = ["def ", "import ", "from ", "class ", "elif ", "self.", "print(", "# "]
+        matches = sum(1 for kw in keywords if kw in source_code)
+        if matches >= 3:
+            return 0.90
+        if matches >= 1:
+            return 0.70
+        return 0.0

@@ -87,11 +87,16 @@ class BaseLanguage(ABC):
         """Analyzer instance for this language."""
         pass
 
+    @property
+    def is_supported(self) -> bool:
+        """Return True if an AST parser/analyzer is active for this language."""
+        return True
+
     def matches_extension(self, filename: str) -> bool:
         """Check if filename extension matches this language."""
         ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         return ext in [e.lower() for e in self.extensions]
 
-    def detect_heuristics(self, source_code: str) -> bool:
-        """Return True if source code heuristics strongly indicate this language."""
-        return False
+    def detect_heuristics(self, source_code: str) -> float:
+        """Return confidence score (0.0 to 1.0) for language detection from code heuristics."""
+        return 0.0
