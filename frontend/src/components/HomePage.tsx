@@ -87,7 +87,7 @@ const HeroDotBackground: React.FC = () => {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const maxDist = 140;
+      const maxDist = 160;
 
       for (let i = 0; i < dots.length; i++) {
         const dot = dots[i];
@@ -98,7 +98,7 @@ const HeroDotBackground: React.FC = () => {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < maxDist) {
-            const force = (1 - dist / maxDist) * 14;
+            const force = (1 - dist / maxDist) * 20;
             const angle = Math.atan2(dy, dx);
             dot.targetX = dot.originX - Math.cos(angle) * force;
             dot.targetY = dot.originY - Math.sin(angle) * force;
@@ -107,8 +107,8 @@ const HeroDotBackground: React.FC = () => {
             dot.targetY = dot.originY;
           }
 
-          dot.x += (dot.targetX - dot.x) * 0.1;
-          dot.y += (dot.targetY - dot.y) * 0.1;
+          dot.x += (dot.targetX - dot.x) * 0.14;
+          dot.y += (dot.targetY - dot.y) * 0.14;
         }
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
@@ -156,7 +156,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
       .finally(() => setLoadingHistory(false));
   }, [user]);
 
-  // IntersectionObserver for subtle scroll-in reveal animations
+  // IntersectionObserver for smooth, replayable scroll-in reveal animations
   useEffect(() => {
     const elements = document.querySelectorAll('.reveal-on-scroll');
     if (!elements.length) return;
@@ -166,10 +166,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLoadSnippet })
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
+          } else {
+            entry.target.classList.remove('is-visible');
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -10% 0px' }
     );
 
     elements.forEach((el) => observer.observe(el));

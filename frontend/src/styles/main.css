@@ -1135,11 +1135,22 @@ body {
   }
 }
 
-/* Polished Hero Entrance Animation */
+/* Visibly Noticeable & Smooth Hero Entrance Animation */
 @keyframes heroEntrance {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(35px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroHeadlineEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(42px);
   }
   to {
     opacity: 1;
@@ -1148,23 +1159,35 @@ body {
 }
 
 .hero-animate-in {
-  animation: heroEntrance 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: heroEntrance 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-fill-mode: backwards;
   will-change: opacity, transform;
 }
 
-.hero-delay-1 { animation-delay: 100ms; }
-.hero-delay-2 { animation-delay: 200ms; }
-.hero-delay-3 { animation-delay: 300ms; }
-.hero-delay-4 { animation-delay: 400ms; }
-.hero-delay-5 { animation-delay: 500ms; }
+.hero-headline.hero-animate-in {
+  animation-name: heroHeadlineEntrance;
+  animation-duration: 750ms;
+}
 
-/* Scroll-In IntersectionObserver Reveal */
+.hero-delay-1 { animation-delay: 0ms; }
+.hero-delay-2 { animation-delay: 120ms; }
+.hero-delay-3 { animation-delay: 280ms; }
+.hero-delay-4 { animation-delay: 400ms; }
+.hero-delay-5 { animation-delay: 550ms; }
+
+/* Scroll-In IntersectionObserver Reveal (Replayable Fade & Float) */
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 550ms cubic-bezier(0.16, 1, 0.3, 1), transform 550ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(35px);
+  transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1), transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
+}
+
+.feature-card.reveal-on-scroll,
+.step-card.reveal-on-scroll,
+.recent-card.reveal-on-scroll {
+  transform: translateY(28px);
+  transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal-on-scroll.is-visible {
@@ -1172,9 +1195,9 @@ body {
   transform: translateY(0);
 }
 
-.reveal-delay-1 { transition-delay: 60ms; }
-.reveal-delay-2 { transition-delay: 120ms; }
-.reveal-delay-3 { transition-delay: 180ms; }
+.reveal-delay-1 { transition-delay: 0ms; }
+.reveal-delay-2 { transition-delay: 80ms; }
+.reveal-delay-3 { transition-delay: 160ms; }
 .reveal-delay-4 { transition-delay: 240ms; }
 
 /* Accessibility: Reduced Motion Override */
