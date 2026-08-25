@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Editor, { Monaco, OnMount } from '@monaco-editor/react';
+import { IconTrash2, IconRotateCcw, IconMaximize2, IconMinimize2 } from './Icons';
 
 interface CodeEditorProps {
   value: string;
@@ -154,15 +155,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 type="button"
                 className="btn btn-secondary nav-btn-sm"
                 onClick={onClear}
+                aria-label="Clear code"
+                title="Clear code"
               >
-                Clear
+                <IconTrash2 size={14} /> Clear
               </button>
               <button
                 type="button"
                 className="btn btn-secondary nav-btn-sm"
                 onClick={onResetExample}
+                aria-label="Reset code example"
+                title="Reset code example"
               >
-                Reset
+                <IconRotateCcw size={14} /> Reset
               </button>
             </>
           )}
@@ -172,8 +177,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             className="btn btn-secondary nav-btn-sm collapse-btn"
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
+            aria-label={isCollapsed ? 'Expand Python Editor' : 'Collapse Python Editor'}
           >
-            {isCollapsed ? `Expand (${lineCount} lines) ↓` : 'Collapse ↑'}
+            {isCollapsed ? (
+              <>
+                <IconMaximize2 size={14} /> Expand ({lineCount} lines)
+              </>
+            ) : (
+              <>
+                <IconMinimize2 size={14} /> Collapse
+              </>
+            )}
           </button>
         </div>
       </div>

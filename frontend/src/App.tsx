@@ -286,6 +286,7 @@ export const App: React.FC = () => {
             errorMessage={errorMessage}
             cached={analysisResponse?.cached}
             onSelectNode={setHighlightLine}
+            sourceCode={code}
           />
         </main>
       )}

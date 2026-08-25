@@ -186,6 +186,7 @@ def serialize_node(
         "type": node_type,
         "label": label,
         "line": getattr(node, "lineno", None),
+        "end_line": getattr(node, "end_lineno", None),
         "metadata": metadata,
         "complexity": complexity,
         "complexity_weight": weight,
@@ -198,6 +199,7 @@ def serialize_node(
                 "type": "Collapsed",
                 "label": "Depth limited",
                 "line": None,
+                "end_line": None,
                 "metadata": {"reason": "Large AST"},
                 "complexity": {
                     "level": "simple",

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { IconSun, IconMoon, IconUser, IconLogOut, IconHome, IconCode, IconHistory } from './Icons';
+import { IconSun, IconMoon, IconUser, IconLogOut, IconHouse, IconCode2, IconHistory } from './Icons';
 
 interface NavbarProps {
   currentRoute: string;
@@ -52,22 +52,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             className={`nav-link ${currentRoute === 'home' ? 'is-active' : ''}`}
             onClick={() => onNavigate('home')}
+            aria-label="Go to Home"
           >
-            <IconHome size={15} />
+            <IconHouse size={15} />
             <span>Home</span>
           </button>
           <button
             type="button"
             className={`nav-link ${currentRoute === 'analyzer' ? 'is-active' : ''}`}
             onClick={() => onNavigate('analyzer')}
+            aria-label="Go to Python Analyzer"
           >
-            <IconCode size={15} />
+            <IconCode2 size={15} />
             <span>Analyzer</span>
           </button>
           <button
             type="button"
             className={`nav-link ${currentRoute === 'history' ? 'is-active' : ''}`}
             onClick={() => onNavigate('history')}
+            aria-label="Go to History"
           >
             <IconHistory size={15} />
             <span>History</span>
@@ -81,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           type="button"
           onClick={onToggleTheme}
           title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          aria-label="Toggle theme"
+          aria-label="Toggle color theme"
         >
           {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
         </button>
@@ -93,6 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="avatar-btn"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
               title={user.email}
+              aria-label="User account menu"
             >
               <IconUser size={16} />
               <span className="user-email-text">{user.email}</span>

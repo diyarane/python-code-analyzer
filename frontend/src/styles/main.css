@@ -573,15 +573,192 @@ body {
   padding: 20px;
 }
 
-/* Full-Width Interactive AST Panel & Graph Canvas */
-.ast-container {
-  height: 380px;
+/* Interactive AST Header & Info Popover */
+.ast-title-with-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-popover-wrapper {
+  position: relative;
+}
+
+.info-trigger-btn {
+  padding: 3px 6px;
+  color: var(--primary-strong);
+}
+
+.info-popover-card {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  width: 320px;
+  background: var(--surface-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.popover-section h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-strong);
+  margin: 0 0 4px 0;
+}
+
+.popover-section p {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Full-Screen AST Workspace Overlay */
+.ast-fullscreen-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000 !important;
+  background: #080808 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding: 16px !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+}
+
+.ast-fullscreen-overlay .ast-workspace-body {
+  height: calc(100vh - 80px) !important;
+}
+
+/* Interactive AST Workspace Body & Contextual Source Inspector */
+.ast-workspace-body {
+  display: flex;
   width: 100%;
+  height: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ast-container {
+  flex: 1;
+  height: 100%;
   background-color: #0c0c0c;
   background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 20px 20px;
   position: relative;
   overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.ast-workspace-body.has-inspector .ast-container {
+  width: 65%;
+}
+
+.source-inspector-panel {
+  width: 35%;
+  min-width: 280px;
+  background: var(--surface-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideInRight 0.2s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-secondary);
+}
+
+.inspector-header-title h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 2px 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.line-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-strong);
+}
+
+.inspector-content {
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.82rem;
+}
+
+.inspector-meta-label,
+.inspector-meta-reason {
+  color: var(--text-secondary);
+}
+
+.snippet-code-box {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.snippet-line {
+  display: flex;
+  padding: 3px 10px;
+  gap: 12px;
+}
+
+.snippet-line.is-selected-line {
+  background: rgba(59, 130, 246, 0.18);
+  border-left: 3px solid var(--primary-strong);
+}
+
+.line-num {
+  color: var(--muted);
+  min-width: 24px;
+  text-align: right;
+  user-select: none;
+}
+
+.line-code {
+  color: var(--text);
+  white-space: pre;
 }
 
 .ast-btn-group {
@@ -596,6 +773,21 @@ body {
   height: 100%;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+/* Custom AST Node Glow & Hover Styling */
+.ast-node {
+  transition: all 0.15s ease;
+}
+
+.ast-node:hover {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+  transform: scale(1.03);
+}
+
+.ast-node.is-active {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  border-color: var(--primary-strong);
 }
 
 /* Full-Viewport Opening Scene Hero (Not inside a card!) */
@@ -1159,6 +1351,20 @@ body {
 @media (max-width: 1024px) {
   .editor-results-row {
     grid-template-columns: 1fr;
+  }
+  .ast-workspace-body {
+    flex-direction: column;
+    height: auto;
+  }
+  .ast-workspace-body.has-inspector .ast-container {
+    width: 100%;
+    height: 300px;
+  }
+  .source-inspector-panel {
+    width: 100%;
+    min-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
   }
 }
 
