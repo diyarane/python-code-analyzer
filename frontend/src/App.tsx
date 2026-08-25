@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
+import { AnalyzerToolbar } from './components/AnalyzerToolbar';
 import { CodeEditor } from './components/CodeEditor';
 import { MetricsGrid } from './components/MetricsGrid';
 import { AstVisualizer } from './components/AstVisualizer';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { ProgressIndicator } from './components/ProgressIndicator';
-import { AuthModal } from './components/AuthModal';
 import { SaveTitleModal } from './components/SaveTitleModal';
 import { HomePage } from './components/HomePage';
 import { HistoryPage } from './components/HistoryPage';
+import { LoginPage } from './components/LoginPage';
+import { SignupPage } from './components/SignupPage';
 import { useAnalysisSocket } from './hooks/useAnalysisSocket';
 import { useAuth } from './context/AuthContext';
 import { analyzerApi } from './services/analyzerApi';
@@ -23,16 +25,15 @@ const DEFAULT_CODE = `def find_duplicates(arr):
     return duplicates`;
 
 export const App: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('codeanalyzer-theme') as 'dark' | 'light') || 'dark';
   });
 
-  // Client Routing State: /home, /analyzer, /history
-  const [currentRoute, setCurrentRoute] = useState<'home' | 'analyzer' | 'history'>(() => {
+  // Client Routing State: /login, /signup, /home, /analyzer, /history
+  const [currentRoute, setCurrentRoute] = useState<string>(() => {
     const path = window.location.pathname.replace('/', '').toLowerCase();
-    if (path === 'analyzer') return 'analyzer';
-    if (path === 'history') return 'history';
+    if (['login', 'signup', 'analyzer', 'history'].includes(path)) return path;
     return 'home';
   });
 
@@ -43,9 +44,7 @@ export const App: React.FC = () => {
   const [analysisResponse, setAnalysisResponse] = useState<AnalyzeResponse | null>(null);
   const [highlightLine, setHighlightLine] = useState<number | null>(null);
 
-  // Auth & Save State
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  // Save Modal State
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -53,7 +52,7 @@ export const App: React.FC = () => {
 
   const isAnalyzing = isAnalyzingLocal || isSocketAnalyzing;
 
-  const navigate = useCallback((route: 'home' | 'analyzer' | 'history') => {
+  const navigate = useCallback((route: string) => {
     setCurrentRoute(route);
     window.history.pushState({}, '', `/${route}`);
   }, []);
@@ -61,13 +60,22 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname.replace('/', '').toLowerCase();
-      if (path === 'analyzer') setCurrentRoute('analyzer');
-      else if (path === 'history') setCurrentRoute('history');
-      else setCurrentRoute('home');
+      if (['login', 'signup', 'analyzer', 'history'].includes(path)) {
+        setCurrentRoute(path);
+      } else {
+        setCurrentRoute('home');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Protected route redirection logic
+  useEffect(() => {
+    if (!authLoading && !user && ['history'].includes(currentRoute)) {
+      navigate('login');
+    }
+  }, [user, authLoading, currentRoute, navigate]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -142,14 +150,9 @@ export const App: React.FC = () => {
     analyzeSocket(code, handleSuccess, handleError, handleHttpFallback);
   }, [code, isAnalyzing, analyzeSocket]);
 
-  const handleOpenAuthModal = (mode: 'login' | 'signup') => {
-    setAuthModalMode(mode);
-    setIsAuthModalOpen(true);
-  };
-
   const handleInitiateSave = () => {
     if (!user) {
-      handleOpenAuthModal('login');
+      navigate('login');
       return;
     }
     if (!analysisResponse || !analysisResponse.success) return;
@@ -199,19 +202,15 @@ export const App: React.FC = () => {
         onNavigate={navigate}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onAnalyze={runAnalyze}
-        onFileUpload={handleFileUpload}
-        onOpenAuthModal={handleOpenAuthModal}
-        onSaveAnalysis={handleInitiateSave}
-        canSave={!!analysisResponse && !!analysisResponse.success}
-        isAnalyzing={isAnalyzing}
-        fileStatus={fileStatus}
       />
+
+      {currentRoute === 'login' && <LoginPage onNavigate={navigate} />}
+
+      {currentRoute === 'signup' && <SignupPage onNavigate={navigate} />}
 
       {currentRoute === 'home' && (
         <HomePage
           onNavigate={navigate}
-          onOpenAuth={handleOpenAuthModal}
           onLoadSnippet={handleLoadSnippet}
         />
       )}
@@ -220,83 +219,87 @@ export const App: React.FC = () => {
         <HistoryPage
           onNavigate={navigate}
           onLoadSnippet={handleLoadSnippet}
-          onOpenAuth={handleOpenAuthModal}
         />
       )}
 
       {currentRoute === 'analyzer' && (
-        <main className="dashboard">
-          <CodeEditor
-            value={code}
-            onChange={handleCodeChange}
-            onAnalyze={runAnalyze}
+        <>
+          <AnalyzerToolbar
+            fileStatus={fileStatus}
+            onFileUpload={handleFileUpload}
             onClear={handleClearCode}
             onResetExample={handleResetExample}
-            theme={theme}
-            fileStatus={fileStatus}
-            highlightLine={highlightLine}
-            errorLine={errorLine}
-            errorMessage={errorMessage}
+            onAnalyze={runAnalyze}
             isAnalyzing={isAnalyzing}
           />
 
-          <section className="panel results-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Analysis</p>
-                <h2>Results Overview</h2>
-              </div>
-              <span
-                className={`status-pill ${
-                  analysisState === 'Ready' || analysisState === 'Restored'
-                    ? 'status-pill-idle'
-                    : ''
-                }`}
-              >
-                {analysisState}
-              </span>
-            </div>
-
-            <ProgressIndicator
-              stages={stages}
+          <main className="dashboard">
+            <CodeEditor
+              value={code}
+              onChange={handleCodeChange}
+              onAnalyze={runAnalyze}
+              onClear={handleClearCode}
+              onResetExample={handleResetExample}
+              theme={theme}
+              fileStatus={fileStatus}
+              highlightLine={highlightLine}
+              errorLine={errorLine}
+              errorMessage={errorMessage}
               isAnalyzing={isAnalyzing}
-              isSocketConnected={isSocketConnected}
             />
 
-            <MetricsGrid
-              metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+            <section className="panel results-panel">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Analysis</p>
+                  <h2>Results Overview</h2>
+                </div>
+                <span
+                  className={`status-pill ${
+                    analysisState === 'Ready' || analysisState === 'Restored'
+                      ? 'status-pill-idle'
+                      : ''
+                  }`}
+                >
+                  {analysisState}
+                </span>
+              </div>
+
+              <ProgressIndicator
+                stages={stages}
+                isAnalyzing={isAnalyzing}
+                isSocketConnected={isSocketConnected}
+              />
+
+              <MetricsGrid
+                metrics={analysisResponse?.success ? analysisResponse.metrics || null : null}
+                error={!analysisResponse?.success ? analysisResponse?.error : null}
+                errorMessage={errorMessage}
+              />
+
+              <AstVisualizer
+                astData={analysisResponse?.success ? analysisResponse.ast || null : null}
+                nodeCount={analysisResponse?.node_count}
+                warnings={analysisResponse?.warnings}
+                errorMessage={errorMessage}
+                cached={analysisResponse?.cached}
+                onSelectNode={setHighlightLine}
+              />
+            </section>
+
+            <AnalysisPanel
+              explanations={
+                analysisResponse?.success ? analysisResponse.explanations || null : null
+              }
               error={!analysisResponse?.success ? analysisResponse?.error : null}
               errorMessage={errorMessage}
+              onSaveExplanation={handleInitiateSave}
+              isSaved={isSaved}
+              canSave={!!analysisResponse && !!analysisResponse.success}
             />
-
-            <AstVisualizer
-              astData={analysisResponse?.success ? analysisResponse.ast || null : null}
-              nodeCount={analysisResponse?.node_count}
-              warnings={analysisResponse?.warnings}
-              errorMessage={errorMessage}
-              cached={analysisResponse?.cached}
-              onSelectNode={setHighlightLine}
-            />
-          </section>
-
-          <AnalysisPanel
-            explanations={
-              analysisResponse?.success ? analysisResponse.explanations || null : null
-            }
-            error={!analysisResponse?.success ? analysisResponse?.error : null}
-            errorMessage={errorMessage}
-            onSaveExplanation={handleInitiateSave}
-            isSaved={isSaved}
-            canSave={!!analysisResponse && !!analysisResponse.success}
-          />
-        </main>
+          </main>
+        </>
       )}
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialMode={authModalMode}
-      />
 
       <SaveTitleModal
         isOpen={isSaveModalOpen}

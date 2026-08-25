@@ -2,17 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AnalyzeResponse } from '../types/analyzer';
 import { HistoryRecord } from './HomePage';
+import { IconSearch, IconTrash, IconCode } from './Icons';
 
 interface HistoryPageProps {
-  onNavigate: (route: 'home' | 'analyzer' | 'history') => void;
+  onNavigate: (route: string) => void;
   onLoadSnippet: (code: string, result: AnalyzeResponse) => void;
-  onOpenAuth: (mode: 'login' | 'signup') => void;
 }
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({
   onNavigate,
   onLoadSnippet,
-  onOpenAuth,
 }) => {
   const { user } = useAuth();
   const [history, setHistory] = useState<HistoryRecord[]>([]);
@@ -73,13 +72,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           <h1>Analysis History</h1>
         </div>
         {user && (
-          <input
-            type="text"
-            className="history-search-input"
-            placeholder="Search saved snippets..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="history-search-wrapper">
+            <IconSearch size={16} className="search-icon" />
+            <input
+              type="text"
+              className="history-search-input"
+              placeholder="Filter saved analyses..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         )}
       </div>
 
@@ -89,9 +91,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => onOpenAuth('login')}
+            onClick={() => onNavigate('login')}
           >
-            Sign In to Your Account
+            Sign In
           </button>
         </div>
       ) : loading ? (
@@ -102,67 +104,91 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         <div className="home-empty-card">
           <p>
             {search
-              ? 'No analysis records match your search query.'
-              : 'No saved analyses found in your vault.'}
+              ? 'No analysis records match your search filter.'
+              : 'No saved analyses yet. Run an analysis and save it to see your history here.'}
           </p>
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => onNavigate('analyzer')}
           >
-            Go to Analyzer →
+            Start Analyzing
           </button>
         </div>
       ) : (
-        <div className="history-full-grid">
-          {filteredHistory.map((item) => {
-            const timeComp = item.analysis_result?.metrics?.time_complexity || 'O(1)';
-            const spaceComp = item.analysis_result?.metrics?.space_complexity || 'O(1)';
-            const dateStr = new Date(item.created_at).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+        <div className="history-table-wrapper">
+          <table className="history-table">
+            <thead>
+              <tr>
+                <th>Name / Title</th>
+                <th>Time Complexity</th>
+                <th>Space Complexity</th>
+                <th>Optimization</th>
+                <th>Created Date</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredHistory.map((item) => {
+                const metrics = item.analysis_result?.metrics;
+                const timeComp = metrics?.time_complexity || 'O(1)';
+                const spaceComp = metrics?.space_complexity || 'O(1)';
+                const optScore = metrics?.optimization_score !== undefined ? `${metrics.optimization_score}/100` : '—';
+                const dateStr = new Date(item.created_at).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                });
 
-            return (
-              <div key={item.id} className="history-full-card">
-                <div className="history-card-header">
-                  <h3 className="history-title">{item.title}</h3>
-                  <div className="history-badges">
-                    <span className="history-badge">Time {timeComp}</span>
-                    <span className="history-badge">Space {spaceComp}</span>
-                  </div>
-                </div>
-
-                <pre className="history-code-block">{item.source_code}</pre>
-
-                <div className="history-card-footer">
-                  <span className="history-date">{dateStr}</span>
-                  <div className="history-card-actions">
-                    <button
-                      type="button"
-                      className="btn btn-secondary nav-btn-sm"
-                      onClick={() => {
-                        onLoadSnippet(item.source_code, item.analysis_result);
-                        onNavigate('analyzer');
-                      }}
-                    >
-                      Open in Analyzer →
-                    </button>
-                    <button
-                      type="button"
-                      className="history-delete-btn"
-                      onClick={(e) => handleDelete(item.id, e)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                return (
+                  <tr key={item.id} className="history-table-row">
+                    <td>
+                      <div className="history-table-name">
+                        <strong>{item.title}</strong>
+                        <span className="history-table-code-sub">
+                          {item.source_code.slice(0, 45)}...
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="history-badge">{timeComp}</span>
+                    </td>
+                    <td>
+                      <span className="history-badge muted">{spaceComp}</span>
+                    </td>
+                    <td>
+                      <span className="history-score-tag">{optScore}</span>
+                    </td>
+                    <td className="history-date-cell">{dateStr}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="history-table-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary table-btn"
+                          onClick={() => {
+                            onLoadSnippet(item.source_code, item.analysis_result);
+                            onNavigate('analyzer');
+                          }}
+                          title="Open analysis in workspace"
+                        >
+                          <IconCode size={14} />
+                          <span>Open</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary table-btn danger"
+                          onClick={(e) => handleDelete(item.id, e)}
+                          title="Delete saved analysis"
+                        >
+                          <IconTrash size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

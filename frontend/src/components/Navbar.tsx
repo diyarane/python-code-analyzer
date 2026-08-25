@@ -1,18 +1,12 @@
-import React, { useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { IconSun, IconMoon, IconUser, IconLogOut, IconHome, IconCode, IconHistory } from './Icons';
 
 interface NavbarProps {
-  currentRoute: 'home' | 'analyzer' | 'history';
-  onNavigate: (route: 'home' | 'analyzer' | 'history') => void;
+  currentRoute: string;
+  onNavigate: (route: string) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  onAnalyze: () => void;
-  onFileUpload: (code: string, filename: string) => void;
-  onOpenAuthModal: (mode: 'login' | 'signup') => void;
-  onSaveAnalysis: () => void;
-  canSave: boolean;
-  isAnalyzing: boolean;
-  fileStatus: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,34 +14,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigate,
   theme,
   onToggleTheme,
-  onAnalyze,
-  onFileUpload,
-  onOpenAuthModal,
-  onSaveAnalysis,
-  canSave,
-  isAnalyzing,
-  fileStatus,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith('.py')) {
-      alert('Only .py files are supported.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const content = String(reader.result || '');
-      onFileUpload(content, file.name);
-      onNavigate('analyzer');
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
     };
-    reader.readAsText(file);
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <nav className="navbar">
@@ -62,9 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           aria-label="CodeAnalyzer AI home"
         >
           <span className="brand-mark">CA</span>
-          <span>
+          <span className="brand-name">
             <strong>CodeAnalyzer AI</strong>
-            <small>Static intelligence platform</small>
           </span>
         </a>
 
@@ -74,106 +53,102 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`nav-link ${currentRoute === 'home' ? 'is-active' : ''}`}
             onClick={() => onNavigate('home')}
           >
-            Home
+            <IconHome size={15} />
+            <span>Home</span>
           </button>
           <button
             type="button"
             className={`nav-link ${currentRoute === 'analyzer' ? 'is-active' : ''}`}
             onClick={() => onNavigate('analyzer')}
           >
-            Analyzer
+            <IconCode size={15} />
+            <span>Analyzer</span>
           </button>
           <button
             type="button"
             className={`nav-link ${currentRoute === 'history' ? 'is-active' : ''}`}
             onClick={() => onNavigate('history')}
           >
-            History
+            <IconHistory size={15} />
+            <span>History</span>
           </button>
         </div>
       </div>
 
-      <div className="nav-actions">
-        <input
-          ref={fileInputRef}
-          className="file-input"
-          type="file"
-          accept=".py"
-          onChange={handleFileChange}
-        />
-
-        {currentRoute === 'analyzer' && (
-          <>
-            <button
-              className="btn btn-secondary"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Upload ({fileStatus})
-            </button>
-
-            {user && canSave && (
-              <button
-                className="btn btn-secondary"
-                type="button"
-                onClick={onSaveAnalysis}
-                title="Save analysis to your account history"
-              >
-                Save Analysis
-              </button>
-            )}
-
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={onAnalyze}
-              disabled={isAnalyzing}
-            >
-              {isAnalyzing ? 'Analyzing…' : 'Analyze'}
-            </button>
-          </>
-        )}
+      <div className="nav-right">
+        <button
+          className="icon-btn theme-toggle-icon-btn"
+          type="button"
+          onClick={onToggleTheme}
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+        </button>
 
         {user ? (
-          <div className="user-profile">
-            <span className="user-email" title={user.email}>
-              {user.email}
-            </span>
+          <div className="user-dropdown-container" ref={dropdownRef}>
             <button
               type="button"
-              className="btn btn-secondary nav-btn-sm"
-              onClick={() => logout()}
+              className="avatar-btn"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              title={user.email}
             >
-              Sign Out
+              <IconUser size={16} />
+              <span className="user-email-text">{user.email}</span>
             </button>
+
+            {isDropdownOpen && (
+              <div className="user-dropdown-menu">
+                <div className="user-dropdown-header">
+                  <span className="user-dropdown-email">{user.email}</span>
+                  <span className="user-dropdown-role">Authenticated User</span>
+                </div>
+                <div className="user-dropdown-divider"></div>
+                <button
+                  type="button"
+                  className="user-dropdown-item"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    onNavigate('history');
+                  }}
+                >
+                  <IconHistory size={15} />
+                  <span>Analysis History</span>
+                </button>
+                <button
+                  type="button"
+                  className="user-dropdown-item danger"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    logout();
+                    onNavigate('login');
+                  }}
+                >
+                  <IconLogOut size={15} />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="auth-btn-group">
+          <div className="auth-nav-buttons">
             <button
               type="button"
               className="btn btn-secondary nav-btn-sm"
-              onClick={() => onOpenAuthModal('login')}
+              onClick={() => onNavigate('login')}
             >
               Sign In
             </button>
             <button
               type="button"
-              className="btn btn-secondary nav-btn-sm"
-              onClick={() => onOpenAuthModal('signup')}
+              className="btn btn-primary nav-btn-sm"
+              onClick={() => onNavigate('signup')}
             >
               Sign Up
             </button>
           </div>
         )}
-
-        <button
-          className="theme-toggle"
-          type="button"
-          onClick={onToggleTheme}
-          aria-label="Toggle theme"
-        >
-          <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
       </div>
     </nav>
   );

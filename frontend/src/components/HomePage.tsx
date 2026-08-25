@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AnalyzeResponse } from '../types/analyzer';
+import { IconAst, IconZap, IconSearch, IconBot, IconHistory } from './Icons';
 
 export interface HistoryRecord {
   id: number;
@@ -11,14 +12,12 @@ export interface HistoryRecord {
 }
 
 interface HomePageProps {
-  onNavigate: (route: 'home' | 'analyzer' | 'history') => void;
-  onOpenAuth: (mode: 'login' | 'signup') => void;
+  onNavigate: (route: string) => void;
   onLoadSnippet: (code: string, result: AnalyzeResponse) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   onNavigate,
-  onOpenAuth,
   onLoadSnippet,
 }) => {
   const { user } = useAuth();
@@ -44,14 +43,12 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="home-container">
-      {/* Hero Welcome Section */}
+      {/* Restrained Technical Hero Section */}
       <section className="hero-section">
         <div className="hero-badge">Static Intelligence Platform</div>
-        <h1 className="hero-title">
-          {user ? `Welcome to CodeAnalyzer AI` : 'Analyze & Optimize Python Code'}
-        </h1>
+        <h1 className="hero-title">CodeAnalyzer AI</h1>
         <p className="hero-subhead">
-          Parse Python AST graphs, compute time and space complexity, detect dead code signals, and receive instant AI recommendations.
+          Analyze, understand, and improve your Python code through interactive AST syntax trees, complexity metrics, and static inspections.
         </p>
         <div className="hero-actions">
           <button
@@ -59,21 +56,21 @@ export const HomePage: React.FC<HomePageProps> = ({
             className="btn btn-primary hero-cta"
             onClick={() => onNavigate('analyzer')}
           >
-            Start Analyzing →
+            Start Analyzing
           </button>
           {!user && (
             <button
               type="button"
               className="btn btn-secondary hero-secondary-cta"
-              onClick={() => onOpenAuth('signup')}
+              onClick={() => onNavigate('signup')}
             >
-              Create Free Account
+              Create Account
             </button>
           )}
         </div>
       </section>
 
-      {/* Feature Overview Cards */}
+      {/* Feature Overview Cards with Clean SVG Icons */}
       <section className="home-section">
         <div className="section-header">
           <p className="eyebrow">Capabilities</p>
@@ -81,40 +78,48 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">🌳</div>
-            <h3>Interactive AST Visualizer</h3>
+            <div className="feature-icon-wrapper">
+              <IconAst size={22} />
+            </div>
+            <h3>AST Visualization</h3>
             <p>
-              Render top-down hierarchical compiler syntax graphs powered by React Flow with zoom, pan, and line-sync highlighting.
+              Explore the structure of your Python code through an interactive syntax tree powered by React Flow node mapping.
             </p>
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon">⚡</div>
+            <div className="feature-icon-wrapper">
+              <IconZap size={22} />
+            </div>
             <h3>Complexity Analysis</h3>
             <p>
-              Automated time and space complexity estimation (O(1), O(n), O(n²)) based on loop depth and recursion heuristics.
+              Understand time and space complexity calculated directly from control flow, loop depth, and recursion heuristics.
             </p>
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon">🔍</div>
+            <div className="feature-icon-wrapper">
+              <IconSearch size={22} />
+            </div>
             <h3>Dead Code Detection</h3>
             <p>
-              Identify unused function definitions, unreferenced variables, unimported aliases, and unreachable statements.
+              Identify unreachable branches, unreferenced variables, unimported aliases, and unused function definitions.
             </p>
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon">🤖</div>
+            <div className="feature-icon-wrapper">
+              <IconBot size={22} />
+            </div>
             <h3>AI Recommendations</h3>
             <p>
-              Receive optimization scores and actionable refactoring suggestions to improve execution speed and memory efficiency.
+              Get concise explanations, optimization scores, and actionable refactoring suggestions to enhance code efficiency.
             </p>
           </div>
         </div>
       </section>
 
-      {/* How It Works Flow */}
+      {/* How It Works Workflow */}
       <section className="home-section">
         <div className="section-header">
           <p className="eyebrow">Workflow</p>
@@ -129,20 +134,20 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           <div className="step-card">
             <span className="step-num">02</span>
-            <h4>Run AST Engine</h4>
-            <p>Static AST parser analyzes syntax tree, complexity, and dead code.</p>
+            <h4>Run AST Analysis</h4>
+            <p>Static AST parser analyzes syntax tree, control flow, and complexity.</p>
           </div>
 
           <div className="step-card">
             <span className="step-num">03</span>
-            <h4>Inspect Compiler Graph</h4>
-            <p>Explore interactive React Flow node hierarchy and source line maps.</p>
+            <h4>Inspect Compiler View</h4>
+            <p>Explore interactive React Flow syntax graph and line maps.</p>
           </div>
 
           <div className="step-card">
             <span className="step-num">04</span>
-            <h4>Optimize Code</h4>
-            <p>Review optimization scores, dead code warnings, and recommendations.</p>
+            <h4>Review & Save</h4>
+            <p>Inspect complexity scores, dead code warnings, and save results to your history.</p>
           </div>
         </div>
       </section>
@@ -152,7 +157,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="section-header">
           <div className="header-flex">
             <div>
-              <p className="eyebrow">Your Vault</p>
+              <p className="eyebrow">User Vault</p>
               <h2>Recent Analyses</h2>
             </div>
             {user && recentHistory.length > 0 && (
@@ -169,11 +174,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {!user ? (
           <div className="home-empty-card">
-            <p>Sign in to save and preview your recent Python analysis history.</p>
+            <p>Sign in to save and view your Python analysis history.</p>
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={() => onOpenAuth('login')}
+              onClick={() => onNavigate('login')}
             >
               Sign In to Your Account
             </button>
@@ -182,13 +187,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="home-empty-card">Loading recent analyses...</div>
         ) : recentHistory.length === 0 ? (
           <div className="home-empty-card">
-            <p>No saved analyses yet. Run an analysis and click <strong>Save Analysis</strong> to populate your history.</p>
+            <p>No saved analyses yet. Run an analysis and save it to see your history here.</p>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => onNavigate('analyzer')}
             >
-              Start Your First Analysis
+              Start Analyzing
             </button>
           </div>
         ) : (
@@ -198,8 +203,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               const dateStr = new Date(item.created_at).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
+                year: 'numeric',
               });
 
               return (
@@ -220,7 +224,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </pre>
                   <div className="recent-card-footer">
                     <span>{dateStr}</span>
-                    <span className="recent-action">Reopen →</span>
+                    <span className="recent-action">Open →</span>
                   </div>
                 </div>
               );
