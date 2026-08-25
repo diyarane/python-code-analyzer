@@ -24,6 +24,8 @@ class TestMetricCapabilities(unittest.TestCase):
             ("typescript", "export function foo(x: number) {}"),
             ("javascript_jsx", "export const App = () => <div>Hello</div>;"),
             ("typescript_tsx", "export const App: React.FC = () => <div>Hello</div>;"),
+            ("c", "int add(int a, int b) { return a + b; }"),
+            ("cpp", "int add(int a, int b) { return a + b; }"),
         ]
         for lang, code in supported_cases:
             res = analyze_code(code, language=lang)
@@ -37,8 +39,6 @@ class TestMetricCapabilities(unittest.TestCase):
     def test_unsupported_languages_dead_code_status_and_reason(self):
         unsupported_cases = [
             ("java", "public class Main { public static void main(String[] a) {} }"),
-            ("c", "#include <stdio.h>\nint main() { return 0; }"),
-            ("cpp", "#include <iostream>\nint main() { return 0; }"),
             ("go", "package main\nfunc main() {}"),
             ("rust", "fn main() {}"),
         ]

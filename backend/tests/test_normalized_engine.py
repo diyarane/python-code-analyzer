@@ -66,8 +66,6 @@ function active(u: User): number {
     def test_no_fabricated_metrics_on_unsupported_languages(self):
         codes = [
             ("java", "public class Main { public static void main(String[] a) {} }"),
-            ("c", "int main() { return 0; }"),
-            ("cpp", "int main() { return 0; }"),
             ("go", "package main\nfunc main() {}"),
             ("rust", "fn main() {}"),
         ]
