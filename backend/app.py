@@ -11,6 +11,7 @@ from auth import auth_bp
 from history import history_bp
 from analyzer.ast_parser import analyze_code
 from analyzer.cache import get_cached_analysis, set_cached_analysis
+from analyzer.ai import AIExplanationContext, get_ai_explanation_service
 from socket_events import init_socketio, socketio
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist"))
@@ -93,6 +94,33 @@ def analyze_ast():
     return _run_analyze()
 
 
+@app.route("/explain", methods=["POST"])
+def explain():
+    """
+    Dedicated AI Explanation Endpoint.
+    Generates structured AI explanation from source code and static analysis context.
+    Falls back gracefully to rule-based explanation if no LLM API key is configured.
+    """
+    data = request.get_json(silent=True) or {}
+    context = AIExplanationContext.from_dict(data)
+
+    if not context.source_code or not context.source_code.strip():
+        return jsonify(
+            {
+                "success": False,
+                "error": "EmptyCode",
+                "message": "No code was provided for AI explanation.",
+                "provider_configured": False,
+                "provider": "none",
+            }
+        ), 400
+
+    service = get_ai_explanation_service()
+    res = service.explain(context)
+    status_code = 200 if res.get("success") else 400
+    return jsonify(res), status_code
+
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_spa(path: str):
@@ -101,7 +129,7 @@ def serve_spa(path: str):
     /analyzer, /history, /login, /signup serve index.html, while API routes return 404 JSON.
     """
     # Strict API route protection: API calls must return JSON API 404s, NOT HTML
-    if path.startswith("api/") or path in ["analyze", "analyze-ast"]:
+    if path.startswith("api/") or path in ["analyze", "analyze-ast", "explain"]:
         return jsonify({"success": False, "error": "NotFound", "message": f"API endpoint '/{path}' not found."}), 404
 
     # Serve static assets from /assets/ if requested
