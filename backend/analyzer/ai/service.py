@@ -25,20 +25,28 @@ class AIExplanationService:
         model_name: Optional[str] = None,
         api_key: Optional[str] = None,
     ):
-        self.provider_name = (
-            provider_name or os.environ.get("AI_PROVIDER", "none")
-        ).lower().strip()
-        self.model_name = model_name or os.environ.get("AI_MODEL", "")
-        self.api_key = api_key or os.environ.get("AI_API_KEY", "")
+        configured_provider = provider_name or os.environ.get("AI_PROVIDER", "")
+        if not configured_provider:
+            if os.environ.get("XAI_API_KEY"):
+                configured_provider = "grok"
+            else:
+                configured_provider = "none"
+
+        self.provider_name = configured_provider.lower().strip()
+        self.model_name = model_name or os.environ.get("XAI_MODEL") or os.environ.get("AI_MODEL", "")
+        self.api_key = api_key or os.environ.get("XAI_API_KEY") or os.environ.get("AI_API_KEY", "")
 
         self._active_provider = self._initialize_provider()
 
     def _initialize_provider(self) -> BaseAIProvider:
         provider_cls = AI_PROVIDER_REGISTRY.get(self.provider_name, FallbackAIProvider)
         try:
-            provider_inst = provider_cls()
+            try:
+                provider_inst = provider_cls(api_key=self.api_key, model=self.model_name)
+            except TypeError:
+                provider_inst = provider_cls()
+
             if not provider_inst.is_configured() and self.provider_name not in ("none", "fallback"):
-                # Graceful fallback to FallbackAIProvider if API key is missing
                 return FallbackAIProvider()
             return provider_inst
         except Exception:

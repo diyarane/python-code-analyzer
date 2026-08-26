@@ -14,3 +14,4 @@ psycopg2-binary>=2.9.0
 email-validator>=2.1.0
 tree-sitter==0.21.3
 tree-sitter-languages==1.10.2
+openai>=1.0.0
